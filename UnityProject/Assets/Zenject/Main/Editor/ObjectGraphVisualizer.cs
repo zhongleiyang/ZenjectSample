@@ -1,0 +1,136 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Diagnostics;
+using UnityEngine;
+
+namespace ModestTree.Zenject
+{
+    // Responsibilities:
+    // - Output a file specifying the full object graph for a given root dependency
+    // - This file uses the DOT language with can be fed into GraphViz to generate an image
+    // - http://www.graphviz.org/
+    public static class ObjectGraphVisualizer
+    {
+        public static void OutputObjectGraphToFile(DiContainer container, string outputPath)
+        {
+            OutputObjectGraphToFile(container, outputPath, Enumerable.Empty<Type>());
+        }
+
+        public static void OutputObjectGraphToFile(DiContainer container, string outputPath, IEnumerable<Type> externalIgnoreTypes)
+        {
+#if !UNITY_WEBPLAYER
+            // Output the entire object graph to file
+            var graph = CalculateObjectGraph(container);
+
+            var ignoreTypes = new List<Type>()
+            {
+                typeof(DiContainer),
+                typeof(InitializableHandler),
+                typeof(StandardKernel),
+            };
+
+            ignoreTypes.AddRange(externalIgnoreTypes);
+
+            var resultStr = "digraph { \n";
+
+            resultStr += "use rankdir=LR;\n";
+
+            foreach (var entry in graph)
+            {
+                if (ShouldIgnoreType(entry.Key, ignoreTypes))
+                {
+                    continue;
+                }
+
+                foreach (var dependencyType in entry.Value)
+                {
+                    if (ShouldIgnoreType(dependencyType, ignoreTypes))
+                    {
+                        continue;
+                    }
+
+                    resultStr += GetFormattedTypeName(entry.Key) + " -> " + GetFormattedTypeName(dependencyType) + "; \n";
+                }
+            }
+
+            resultStr += " }";
+
+            System.IO.File.WriteAllText(outputPath, resultStr);
+#endif
+        }
+
+        static bool ShouldIgnoreType(Type type, List<Type> ignoreTypes)
+        {
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Factory<>))
+            {
+                return true;
+            }
+
+            return ignoreTypes.Contains(type);
+        }
+
+        static Dictionary<Type, List<Type>> CalculateObjectGraph(DiContainer container)
+        {
+            var map = new Dictionary<Type, List<Type>>();
+
+            foreach (var contractType in container.AllContracts)
+            {
+                var depends = GetDependencies(container, contractType);
+
+                if (depends.Any())
+                {
+                    map.Add(contractType, depends);
+                }
+            }
+
+            return map;
+        }
+
+        static List<Type> GetDependencies(
+            DiContainer container, Type type)
+        {
+            var dependencies = new List<Type>();
+
+            foreach (var contractType in container.GetDependencyContracts(type))
+            {
+                List<Type> dependTypes;
+
+                if (contractType.FullName.StartsWith("System.Collections.Generic.List"))
+                {
+                    var subTypes = contractType.GetGenericArguments();
+                    Assert.IsEqual(subTypes.Length, 1);
+
+                    var subType = subTypes[0];
+                    dependTypes = container.ResolveTypeMany(subType);
+                }
+                else
+                {
+                    dependTypes = container.ResolveTypeMany(contractType);
+                    Assert.That(dependTypes.Count <= 1);
+                }
+
+                foreach (var dependType in dependTypes)
+                {
+                    dependencies.Add(dependType);
+                }
+            }
+
+            return dependencies;
+        }
+
+        static string GetFormattedTypeName(Type type)
+        {
+            var str = type.GetPrettyName();
+
+            // GraphViz does not read names with < and > characters so replace them
+            str = str.Replace(">", "_");
+            str = str.Replace("<", "_");
+
+            return str;
+        }
+    }
+}
+
