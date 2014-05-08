@@ -7,14 +7,20 @@ namespace ModestTree.Zenject
     [Serializable]
     public class InitializablePrioritiesInstaller : Installer
     {
-        public List<Type> Initializables;
+        public List<Type> _initializables;
+
+        public InitializablePrioritiesInstaller(
+            DiContainer container, List<Type> initializables)
+            : base(container)
+        {
+            _initializables = initializables;
+        }
 
         public override void RegisterBindings()
         {
-            Assert.IsNotNull(Initializables);
             int priorityCount = 1;
 
-            foreach (var initializableType in Initializables)
+            foreach (var initializableType in _initializables)
             {
                 Assert.That(initializableType.DerivesFrom<IInitializable>(),
                     "Expected type '{0}' to derive from IInitializable", initializableType.GetPrettyName());
