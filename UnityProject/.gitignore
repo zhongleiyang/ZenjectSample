@@ -1,0 +1,27 @@
+
+/Temp
+/Library
+/Build
+/obj
+
+#Un-ignore these specific files
+!/Library/*.asset
+!/Library/AssetImportState
+!/Library/AssetVersioning.db
+!/Library/BuildPlayer.prefs
+!/Library/ScriptMapper
+!/Library/assetservercachev3
+!/Library/expandedItems
+!/Library/guidmapper
+!/Library/unity default resources
+!/Library/unity editor resources
+!/Library/metadata/
+
+#ignoring pidb, they are just code completion caching data according to:
+# http://stackoverflow.com/questions/1022111/what-are-monodevelops-pidb-files
+*.pidb
+
+*.userprefs
+
+/*.csproj
+/*.sln
