@@ -10,13 +10,13 @@ namespace ModestTree.Zenject
 {
     public class ZenUtil
     {
-        public static void LoadLevel(string levelName, Action<DiContainer> extraBindings)
+        public static void LoadScene(string levelName, Action<DiContainer> extraBindings)
         {
             CompositionRoot.ExtraBindingsLookup = extraBindings;
             Application.LoadLevel(levelName);
         }
 
-        public static void LoadLevelAdditive(string levelName, Action<DiContainer> extraBindings)
+        public static void LoadSceneAdditive(string levelName, Action<DiContainer> extraBindings)
         {
             CompositionRoot.ExtraBindingsLookup = extraBindings;
             Application.LoadLevelAdditive(levelName);
