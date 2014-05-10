@@ -22,6 +22,9 @@
     * <a href="#across_scenes">Injecting Data Across Scenes</a>
     * <a href="#automocking">Auto-Mocking</a>
     * <a href="#graphviz">Visualizing Your Object Graph</a>
+    * <a href="#dynamic_creation">Creating Objects Dynamically</a>
+    * <a href="#bindscope">Using BindScope</a>
+    * <a href="#disposables">Implementing IDisposable</a>
 * FAQ
     * <a href="#strange">How is this different from Strange IoC?</a>
     * More to come!
@@ -205,7 +208,7 @@ A Zenject driven application is executed by the following steps:
 
 ## <a id="rules"></a>DI Rules / Guidelines / Recommendations
 
-* The container should *only* be referenced in the composition root layer.  Note that factories are part of this layer and the container can be referenced there (which is necessary to create objects at runtime).  For example, see ShipStateFactory in the sample project.
+* The container should *only* be referenced in the composition root layer.  Note that factories are part of this layer and the container can be referenced there (which is necessary to create objects at runtime).  For example, see ShipStateFactory in the sample project.  See <a href="#dynamic_creation">Creating Objects Dynamically</a>
 * Prefer constructor injection to field or property injection.
     * Constructor injection forces the dependency to only be resolved once, at class creation, which is usually what you want.  In many cases you don't want to expose a public property with your internal dependencies
     * Constructor injection guarantees no circular dependencies between classes, which is generally a bad thing to do
@@ -421,6 +424,269 @@ Zenject allows users to generate UML-style images of the object graphs for their
 Note that you will need to have graphviz installed for this to work (which you can find [here](http://www.graphviz.org/)).  You will be prompted to choose the location.
 
 The result is two files (Foo.dot and Foo.png).  The dot file is included in case you want to add custom graphviz commands.
+
+## <a id="dynamic_creation"></a>Creating Objects Dynamically
+
+One of the things that often confuses people new to dependency injection is the question of how to create new objects dynamically, after the app/game has fully started up and after the composition root has resolved the dependency root.  For example, if you are writing a game in which you are spawning new enemies throughout the game, then you will want to construct a new object graph for the 'enemy' class.  How to do this?  The answer: Factories.
+
+Remember that an important part of dependency injection is to reserve use of the container to strictly the "Composition Root Layer".  The container class (DiContainer) is itself included as a dependency in itself so there is nothing stopping you from ignoring this rule and injecting the container into any classes that you want.  For example, the following code will work:
+
+    public class Enemy
+    {
+        DiContainer _container;
+
+        public Enemy(DiContainer container)
+        {
+            _container = container;
+        }
+
+        public void Update()
+        {
+            ...
+            var player = _container.Resolve<Player>();
+            WalkTowards(player.Position);
+            ...
+            etc.
+        }
+    }
+
+HOWEVER, the above code is an example of an anti-pattern.  This will work, and you can use the container to get access to all other classes in your app, however if you do this you will not really be taking advantage of the power of dependency injection.  This is known, by the way, as [Service Locator Pattern](http://blog.ploeh.dk/2010/02/03/ServiceLocatorisanAnti-Pattern/).
+
+Of course, the dependency injection way of doing this would be the following:
+
+    public class Enemy
+    {
+        Player _player;
+
+        public Enemy(Player player)
+        {
+            _player = player;
+        }
+
+        public void Update()
+        {
+            ...
+            WalkTowards(_player.Position);
+            ...
+        }
+    }
+
+The only exception to this rule is within factories and installers.  Again, factories and installers make up what we refer to as the "composition root layer".
+
+For example, if you have a class responsible for spawning new enemies, before DI you might do something like this:
+
+    public class EnemySpawner
+    {
+        List<Enemy> _enemies = new List<Enemy>();
+
+        public void Update()
+        {
+            if (ShouldSpawnNewEnemy())
+            {
+                var enemy = new Enemy();
+                _enemies.Add(enemy);
+            }
+        }
+    }
+
+This will not work however, since in our case the Enemy class requires a reference to the Player class in its constructor.  We could add a dependency to the Player class to the EnemySpawner class, but then we have the problem described <a id="theory">above</a>.  The EnemySpawner class doesn't care about filling in the dependencies for the Enemy class.  All the EnemySpawner class cares about is getting a new Enemy instance.
+
+There are several ways to handle this case in Zenject.  The first way:
+
+    public class EnemySpawner
+    {
+        IFactory<Enemy> _enemyFactory;
+        List<Enemy> _enemies = new List<Enemy>();
+
+        public EnemySpawner(IFactory<Enemy> enemyFactory)
+        {
+            _enemyFactory = enemyFactory;
+        }
+
+        public void Update()
+        {
+            if (ShouldSpawnNewEnemy())
+            {
+                var enemy = _enemyFactory.Create();
+                _enemies.Add(enemy);
+            }
+        }
+    }
+
+Then in your installer, you would include:
+
+    _container.BindFactory<Enemy>();
+
+Which is simply shorthand for the following:
+
+    _container.Bind<IFactory<TContract>>().ToSingle<Factory<TContract>>();
+
+Doing it this way, all the dependencies for the Enemy class (such as the Player) will automatically be filled in.
+
+However, in more complex examples, the EnemySpawner class may wish to pass in custom constructor arguments as well. For example, let's say we want to randomize the speed of each Enemy to add some interesting variation to our game.  Our enemy class becomes:
+
+    public class Enemy
+    {
+        Player _player;
+        float _runSpeed;
+
+        public Enemy(Player player, float runSpeed)
+        {
+            _player = player;
+            _runSpeed = runSpeed;
+        }
+
+        public void Update()
+        {
+            ...
+            WalkTowards(_player.Position);
+            ...
+        }
+    }
+
+The first and easiest way would to handle this would be to change the EnemySpawner class to the following:
+
+    public class EnemySpawner
+    {
+        ...
+        public void Update()
+        {
+            ...
+            var newSpeed = Random.Range(MIN_ENEMY_SPEED, MAX_ENEMY_SPEED);
+            var enemy = _enemyFactory.Create(newSpeed);
+            ...
+        }
+    }
+
+This works because the IFactory<> interface accepts a variable number of arguments.  It will try and intelligently match the given set of arguments to the constructor of the object that its creating.
+
+While this will work, it can be a bit error prone because the arguments that you supply to the `IFactory<Enemy>` class are not validated until run time.  So in some cases you may wish to write a custom factory to wrap the call to IFactory instead:
+
+    public class EnemyFactory
+    {
+        private IFactory<Enemy> _factory;
+
+        public EnemyFactory(DiContainer container)
+        {
+            _factory = new Factory<Enemy>(container);
+        }
+
+        public Enemy Create(float speed)
+        {
+            return _factory.Create(speed);
+        }
+    }
+
+And then change our installer to include:
+
+    _container.Bind<EnemyFactory>().ToSingle();
+
+Note the following:
+* We no longer need the line `_container.BindFactory<Enemy>();` since we are directly creating the Factory<> class in the EnemyFactory constructor.
+* We are injecting the DiContainer directly into the EnemyFactory class, which is generally a bad thing to do but ok in this case because it is a factory (and therefore part of the "composition root layer")
+
+Our EnemySpawner class becomes:
+
+    public class EnemySpawner
+    {
+        EnemyFactory _enemyFactory;
+        List<Enemy> _enemies = new List<Enemy>();
+
+        public EnemySpawner(EnemyFactory enemyFactory)
+        {
+            _enemyFactory = enemyFactory;
+        }
+
+        public void Update()
+        {
+            if (ShouldSpawnNewEnemy())
+            {
+                var newSpeed = Random.Range(MIN_ENEMY_SPEED, MAX_ENEMY_SPEED);
+                var enemy = _enemyFactory.Create(newSpeed);
+                _enemies.Add(enemy);
+            }
+        }
+    }
+
+## <a id="bindscope"></a>Using BindScope
+
+Right now, the difference between using our custom factory vs simply IFactory directly isn't very much.  However, there may be more complicated construction scenarios in the real world where the value of this approach would be more clear.
+
+For example, suppose one day we decide to add further runtime constructor arguments to the Enemy class:
+
+    public class Enemy
+    {
+        public Enemy(EnemyWeapon weapon)
+        {
+            ...
+        }
+    }
+
+    public class EnemyWeapon
+    {
+        public EnemyWeapon(float damage)
+        {
+            ...
+        }
+    }
+
+And let's say we want the damage of the EnemyWeapon class to be specified by the EnemySpawner class.  How do we pass that argument down to EnemyWeapon?  The answer:  'BindScope':
+
+    public class EnemyFactory
+    {
+        IFactory<Enemy> _factory;
+        DiContainer _container;
+
+        public EnemyFactory(DiContainer container)
+        {
+            _factory = new Factory<Enemy>(container);
+            _container = container;
+        }
+
+        public Enemy Create(float weaponDamage)
+        {
+            using (BindScope scope = _container.CreateScope())
+            {
+                scope.Bind<float>().ToSingle(weaponDamage).WhenInjectedInto<EnemyWeapon>();
+                return _factory.Create();
+            }
+        }
+    }
+
+BindScope can be used in factories to temporarily configure the container in a similar way that's done in installers.  This can be very useful when creating complex object graphs at runtime.  After the function returns, whatever bindings you added in the using{} block are automatically removed.  BindScope can also be used to specify injection identifiers as well (which can be less error prone than passing extra parameters as variable arguments to IFactory)
+
+## <a id="disposables"></a>Implementing IDisposable
+
+If you have external resources that you want to clean up when the app closes, the scene changes, or for whatever reason the composition root object is destroyed, you can do the following:
+
+    public class Logger : IInitializable, IDisposable
+    {
+        FileStream _outStream;
+
+        public void Initialize()
+        {
+            _outStream = File.Open("log.txt", FileMode.Open);
+        }
+
+        public void Log(string msg)
+        {
+            _outStream.WriteLine(msg);
+        }
+
+        public void Dispose()
+        {
+            _outStream.Close();
+        }
+    }
+
+Then in your installer you can include:
+
+    _container.Bind<IInitializable>().Bind<Logger>();
+    _container.Bind<IDisposable>().Bind<Logger>();
+
+This works because when the scene changes or your unity application is closed, the unity event OnDestroy() is called on all MonoBehaviours, including the CompositionRoot class.  The CompositionRoot class, which owns your DiContainer, calls Dispose() on the DiContainer, which then calls Dispose() on all objects that are bound to IDisposable.
+
+Note that this example may or may not be a good idea (for example, the file will be left open if your app crashes), but illustrates the point  :)
 
 ## <a id="strange"></a>How is this different from Strange IoC?
 
