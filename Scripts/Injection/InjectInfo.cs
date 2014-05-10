@@ -50,6 +50,11 @@ namespace ModestTree.Zenject
             return info;
         }
 
+        public static IEnumerable<MethodInfo> GetPostInjectMethods(Type type)
+        {
+            return type.GetMethodsWithAttribute<PostInjectAttribute>();
+        }
+
         public static IEnumerable<FieldInfo> GetFieldDependencies(Type type)
         {
             return type.GetFieldsWithAttribute<InjectAttributeBase>();
