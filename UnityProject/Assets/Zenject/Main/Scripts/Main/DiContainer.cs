@@ -90,10 +90,10 @@ namespace ModestTree.Zenject
             return new ReferenceBinder<TContract>(this, _singletonMap);
         }
 
-        public CustomScope CreateScope()
+        public BindScope CreateScope()
         {
             Assert.That(!_hasDisposed);
-            return new CustomScope(this, _singletonMap);
+            return new BindScope(this, _singletonMap);
         }
 
         // See comment in LookupInProgressAdder

@@ -45,6 +45,11 @@ namespace ModestTree.Zenject
                     String.Join(",", additionalCopy.Select(x => x.GetType().GetPrettyName()).ToArray()),
                     container.GetCurrentObjectGraph());
             }
+
+            foreach (var methodInfo in InjectionInfoHelper.GetPostInjectMethods(injectable.GetType()))
+            {
+                methodInfo.Invoke(injectable, new object[0]);
+            }
         }
 
         static bool InjectFromExtras(

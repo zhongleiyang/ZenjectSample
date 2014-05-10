@@ -122,6 +122,20 @@ namespace ModestTree
             return (from f in GetAllFields(type) where f.GetCustomAttributes(typeof(T), true).Any() select f);
         }
 
+        public static IEnumerable<MethodInfo> GetMethodsWithAttribute<T>(this Type type)
+        {
+            return (from m in GetAllMethods(type) where m.GetCustomAttributes(typeof(T), true).Any() select m);
+        }
+
+        public static IEnumerable<MethodInfo> GetAllMethods(this Type type)
+        {
+            // Recursion is necessary since otherwise we won't get private members in base classes
+            var baseClassMethods = type.BaseType == null ? Enumerable.Empty<MethodInfo>() : type.BaseType.GetAllMethods();
+
+            var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            return type.GetMethods(flags).Concat(baseClassMethods);
+        }
+
         public static IEnumerable<FieldInfo> GetAllFields(this Type type)
         {
             // Recursion is necessary since otherwise we won't get private members in base classes

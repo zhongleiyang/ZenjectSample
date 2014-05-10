@@ -14,13 +14,13 @@ namespace ModestTree.Zenject
     //      ...
     //      var bar = _container.Resolve<Foo>();
     //  }
-    public class CustomScope : IDisposable
+    public class BindScope : IDisposable
     {
         DiContainer _container;
         List<ProviderBase> _scopedProviders = new List<ProviderBase>();
         SingletonProviderMap _singletonMap;
 
-        internal CustomScope(DiContainer container, SingletonProviderMap singletonMap)
+        internal BindScope(DiContainer container, SingletonProviderMap singletonMap)
         {
             _container = container;
             _singletonMap = singletonMap;
@@ -52,10 +52,10 @@ namespace ModestTree.Zenject
 
         class CustomScopeValueBinder<TContract> : ValueBinder<TContract> where TContract : struct
         {
-            CustomScope _owner;
+            BindScope _owner;
 
             public CustomScopeValueBinder(
-                CustomScope owner,
+                BindScope owner,
                 DiContainer container, SingletonProviderMap singletonMap)
                 : base(container, singletonMap)
             {
@@ -71,10 +71,10 @@ namespace ModestTree.Zenject
 
         class CustomScopeReferenceBinder<TContract> : ReferenceBinder<TContract> where TContract : class
         {
-            CustomScope _owner;
+            BindScope _owner;
 
             public CustomScopeReferenceBinder(
-                CustomScope owner,
+                BindScope owner,
                 DiContainer container, SingletonProviderMap singletonMap)
                 : base(container, singletonMap)
             {

@@ -29,5 +29,10 @@ namespace ModestTree.Zenject
     public class InjectOptionalAttribute : InjectAttributeBase
     {
     }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public class PostInjectAttribute : Attribute
+    {
+    }
 }
 
