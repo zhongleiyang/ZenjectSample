@@ -13,10 +13,13 @@
 * Zenject API
     * <a href="#getting_started">Getting Started</a>
     * <a href="#zenject_overview">API Overview</a>
-    * <a href="#composition_root"/>Composition Root</a>
+    * <a href="#composition_root">Composition Root</a>
+    * <a href="#bindings">Binding</a>
+    * <a href="#conditional_bindings">Conditional Bindings</a>
     * <a href="#dependency_root">Dependency Root</a>
-    * <a href="#rules">Rules</a>
-    * <a href="#tickables">ITickable & IInitializable</a>
+    * <a href="#rules">Rules / Guidelines / Recommendations</a>
+    * <a href="#tickables">ITickable</a>
+    * <a href="#postinject">IInitializable and PostInject</a>
     * <a href="#hello_world">Hello World</a>
     * <a href="#update_order">Update Order And Initialization Order</a>
     * <a href="#across_scenes">Injecting Data Across Scenes</a>
@@ -43,7 +46,8 @@ For general support or bug requests, please feel free to create issues on the gi
 * Constructor injection (can tag constructor if there are multiple)
 * Field injection
 * Property injection
-* Named injections (string, enum, etc.)
+* Conditional Binding Including Named injections (string, enum, etc.)
+* Support For Building Dynamic Object Graphs At Runtime
 * Auto-Mocking using the Moq library
 * Injection across different Unity scenes
 * Ability to print entire object graph as a UML image automatically
@@ -146,7 +150,7 @@ More important than that is the fact that using a dependency injection framework
 
 Other benefits include:
 
-* Testability - Writing automated unit tests or user-driven tests becomes very easy, because it is just a matter of writing a different 'composition root' which wires up the dependencies in a different way.  Want to only test one subsystem?  Simply create a new composition root which creates 'mocks' for all other systems in the application. (more detail on this below)
+* Testability - Writing automated unit tests or user-driven tests becomes very easy, because it is just a matter of writing a different 'composition root' which wires up the dependencies in a different way.  Want to only test one subsystem?  Simply create a new composition root which creates 'mocks' for all other systems in the application. (more detail <a href="#automocking">below</a>)
 * Refactorability - When code is loosely coupled, as is the case when using DI properly, the entire code base is much more resilient to changes.  You can completely change parts of the code base without having those changes wreak havoc on other parts.
 * Encourages modular code - When using a DI framework you will naturally follow better design practices, because it forces you to think about the interfaces between classes.
 
@@ -183,13 +187,93 @@ To add dependency bindings to your application, you need to write what is referr
 
 The RegisterBindings() method is called once at the entry point of the application by the composition root.  Note here that the Installer class is not a MonoBehaviour and therefore cannot be dragged onto unity game objects.  This is to allow installers to easily trigger other installers and also to allow installers to be used in non-unity contexts (eg: NUnit tests).  However, it is also very useful to be able to simply drag and drop different sets of installers into a given unity scene, which is why in many cases you will want to provide the extra wrapper class.
 
-Once RegisterBindings() is called the installer can begin mapping out the object graph to be used in the application.  The syntax here will be familiar to users of many other DI frameworks.
+Once RegisterBindings() is called the installer can begin mapping out the object graph to be used in the application.  The syntax here will be familiar to users of many other DI frameworks (see <a href="#bindings">here</a> for detail)
 
 Like many other DI frameworks, dependency mapping done by adding the binding to something called the container.  The container should then 'know' how to create all the object instances in our application, by recursively resolving all dependencies for a given object.  You can do this by calling the Resolve method:
 
     Foo foo = _container.Resolve<Foo>()
 
-However, any use of the container should be restricted to the composition root or factory classes (see rules/guidelines section below)
+However, any use of the container should be restricted to the composition root or factory classes (as explained <a href="#rules">below</a>)
+
+## <a id="bindings"></a>Binding
+
+The format for the bind command is one of the following:
+
+Inject by interface or by concrete class:
+
+    _container.Bind<IFoo>().ToSingle<Foo>();
+    _container.Bind<IFoo>().ToTransient<Foo>();
+
+    _container.Bind<Foo>().ToSingle();
+    _container.Bind<Foo>().ToTransient();
+
+
+For primitive types you have to use BindValue instead:
+
+    _container.BindValue<float>().To(1.5f);
+    _container.BindValue<int>().To(42);
+
+Instantiates a new instance of the given prefab and injects the same one every time the given
+monobehaviour class is injected.  Note in this case specifying FooMonoBehaviour twice is redundant but necessary
+
+    _container.Bind<FooMonoBehaviour>().ToSingleFromPrefab<FooMonoBehaviour>(PrefabGameObject);
+
+Instantiates a new instance of the given prefab every time the given monobehaviour class is
+injected.
+
+    _container.Bind<FooMonoBehaviour>().ToTransientFromPrefab<FooMonoBehaviour>(PrefabGameObject);
+
+Creates a new game object and attaches FooMonoBehaviour to it:
+
+    _container.Bind<FooMonoBehaviour>().ToSingleGameObject();
+
+Customize creation logic yourself by defining a method:
+
+    _container.Bind<IFoo>().ToMethod(SomeMethod);
+
+## <a id="conditional_bindings"></a>Conditional Bindings
+
+In many cases you will want to restrict where a given dependency is injected.  You can do this using the following syntax:
+
+Use different implementations of IFoo in different cases:
+
+    _container.Bind<IFoo>().ToSingle<Foo1>().WhenInjectedInto<Bar1>();
+    _container.Bind<IFoo>().ToSingle<Foo2>().WhenInjectedInto<Bar2>();
+
+Inject by name:
+
+    _container.Bind<IFoo>().ToSingle<Foo>().WhenInjectedInto("foo");
+
+    public class Bar
+    {
+        [Inject("foo")]
+        Foo _foo;
+    }
+
+You can also inject by name and also restrict to only Bar class:
+
+    _container.Bind<IFoo>().ToSingle<Foo>().WhenInjectedInto<Bar>("foo");
+
+Note that both of these are simple shorthands.  The long version would be:
+
+    _container.Bind<IFoo>().ToSingle<Foo>().When(context => context.Target == typeof(Bar) && identifier.Equals("foo"));
+
+Note also that you can name dependencies with any type (and not just string) and that it applies to constructor arguments as well, for example:
+
+    enum Foos
+    {
+        A,
+    }
+
+    public class Bar
+    {
+        Foo _foo;
+
+        public Bar(
+            [Inject(Foos.A)] Foo foo)
+        {
+        }
+    }
 
 ## <a id="dependency_root"></a>The dependency root
 
@@ -215,7 +299,7 @@ A Zenject driven application is executed by the following steps:
     * Constructor injection is more portable for cases where you decide to re-use the code without a DI framework such as Zenject.  You can do the same with public properties but it's more error prone.  It's possible to forget to initialize one field and leave the object in an invalid state
     * Finally, Constructor injection makes it clear what all the dependencies of a class are when another programmer is reading the code.  They can simply look at the parameter list of the constructor.
 
-## <a id="tickables"></a>Tickables / IInitializables
+## <a id="tickables"></a>ITickable
 
 I prefer to avoid MonoBehaviours when possible in favour of just normal C# classes.  Zenject allows you to do this much more easily by providing interfaces that mirror functionality that you would normally need to use a MonoBehaviour for.
 
@@ -233,7 +317,33 @@ Then it's just a matter of including the following in one of your installers (as
 
     _container.Bind<ITickable>().ToSingle<Ship>();
 
-The same goes for IInitializable, for cases where you have code that you want to run on startup.  (side note: using IInitializable is generally better than putting too much work in constructors).  IInitializable can also be used for objects that are created via factories (in which case Initialize() is called automatically, as long as you use one of the built in Zenject factory classes).
+Note that the order that Tick() is called on all ITickables is also configurable, as outlined <a href="#update_order">here</a>.
+
+## <a id="postinject"></a>IInitializable and PostInject
+
+If you have some initialization that needs to occur on a given object, you can include this code in the constructor.  However, this means that the initialization logic would occur in the middle of the object graph being constructed, so it may not be ideal.
+
+One alternative is implement IInitializable, and then perform initialization logic in an Initialize() method.  This method would be called immediately after the entire object graph is constructed.  The order that the Initialize() methods are called on all IInitialize's is also controllable in a similar way to ITickable, as explained <a href="#update_order">here</a>.
+
+IInitializable works well for start-up initialization, but what about for objects that are created dynamically via factories?  (see <a href="dynamic_creation">this section</a> for what I'm referring to here).
+
+In these cases you can mark any methods that you want to be called after injection occurs with a [PostInject] attribute:
+
+    public class Foo
+    {
+        [Inject]
+        IBar _bar;
+
+        [PostInject]
+        public void Initialize()
+        {
+            ...
+            _bar.DoStuff();
+            ...
+        }
+    }
+
+This still has the drawback that it is called in the middle of object graph construction, but can be useful in many cases.  In particular, if you are using property injection (which isn't generally recommended but necessary in some cases) then you will not have your dependencies in the constructor, and therefore you will need to define a [PostInject] method in this case.
 
 Note that you do not need to use this approach (that is, ITickables and IInitializables) to use Zenject. You can continue writing all your code in MonoBehaviours and still receive all the benefits of Zenject.
 
