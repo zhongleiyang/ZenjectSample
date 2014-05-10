@@ -23,6 +23,8 @@
     * <a href="#automocking">Auto-Mocking</a>
     * <a href="#graphviz">Visualizing Your Object Graph</a>
     * <a href="#dynamic_creation">Creating Objects Dynamically</a>
+    * <a href="#bindscope">Using BindScope</a>
+    * <a href="#disposables">Implementing IDisposable</a>
 * FAQ
     * <a href="#strange">How is this different from Strange IoC?</a>
     * More to come!
@@ -606,6 +608,8 @@ Our EnemySpawner class becomes:
         }
     }
 
+## <a id="bindscope"></a>Using BindScope
+
 Right now, the difference between using our custom factory vs simply IFactory directly isn't very much.  However, there may be more complicated construction scenarios in the real world where the value of this approach would be more clear.
 
 For example, suppose one day we decide to add further runtime constructor arguments to the Enemy class:
@@ -650,6 +654,39 @@ And let's say we want the damage of the EnemyWeapon class to be specified by the
     }
 
 BindScope can be used in factories to temporarily configure the container in a similar way that's done in installers.  This can be very useful when creating complex object graphs at runtime.  After the function returns, whatever bindings you added in the using{} block are automatically removed.  BindScope can also be used to specify injection identifiers as well (which can be less error prone than passing extra parameters as variable arguments to IFactory)
+
+## <a id="disposables"></a>Implementing IDisposable
+
+If you have external resources that you want to clean up when the app closes, the scene changes, or for whatever reason the composition root object is destroyed, you can do the following:
+
+    public class Logger : IInitializable, IDisposable
+    {
+        FileStream _outStream;
+
+        public void Initialize()
+        {
+            _outStream = File.Open("log.txt", FileMode.Open);
+        }
+
+        public void Log(string msg)
+        {
+            _outStream.WriteLine(msg);
+        }
+
+        public void Dispose()
+        {
+            _outStream.Close();
+        }
+    }
+
+Then in your installer you can include:
+
+    _container.Bind<IInitializable>().Bind<Logger>();
+    _container.Bind<IDisposable>().Bind<Logger>();
+
+This works because when the scene changes or your unity application is closed, the unity event OnDestroy() is called on all MonoBehaviours, including the CompositionRoot class.  The CompositionRoot class, which owns your DiContainer, calls Dispose() on the DiContainer, which then calls Dispose() on all objects that are bound to IDisposable.
+
+Note that this example may or may not be a good idea (for example, the file will be left open if your app crashes), but illustrates the point  :)
 
 ## <a id="strange"></a>How is this different from Strange IoC?
 
