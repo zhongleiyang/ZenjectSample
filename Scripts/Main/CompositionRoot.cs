@@ -58,6 +58,11 @@ namespace ModestTree.Zenject
             Resolve();
         }
 
+        void OnDestroy()
+        {
+            _container.Dispose();
+        }
+
         void Resolve()
         {
             InjectionHelper.InjectChildGameObjects(_container, gameObject);
