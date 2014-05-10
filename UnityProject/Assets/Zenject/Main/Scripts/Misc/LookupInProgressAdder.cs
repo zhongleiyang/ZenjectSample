@@ -17,12 +17,12 @@ namespace ModestTree.Zenject
     // It is very useful to track the object graph when debugging a DI related problem
     // so the way we track this is by pushing and popping from LookupsInProgress
     // using C# using() pattern
-    public class LookupInProgressAdder : IDisposable
+    internal class LookupInProgressAdder : IDisposable
     {
         DiContainer _container;
         Type _concreteType;
 
-        internal LookupInProgressAdder(DiContainer container, Type concreteType)
+        public LookupInProgressAdder(DiContainer container, Type concreteType)
         {
             if (container.LookupsInProgress.Contains(concreteType))
             {
