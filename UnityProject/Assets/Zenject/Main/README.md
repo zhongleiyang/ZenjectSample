@@ -15,6 +15,7 @@
     * <a href="#zenject_overview">API Overview</a>
     * <a href="#composition_root">Composition Root</a>
     * <a href="#bindings">Binding</a>
+    * <a href="#optional_bindings">Optional Binding</a>
     * <a href="#conditional_bindings">Conditional Bindings</a>
     * <a href="#dependency_root">Dependency Root</a>
     * <a href="#rules">Rules / Guidelines / Recommendations</a>
@@ -47,6 +48,7 @@ For general support or bug requests, please feel free to create issues on the gi
 * Field injection
 * Property injection
 * Conditional Binding Including Named injections (string, enum, etc.)
+* Optional Dependencies
 * Support For Building Dynamic Object Graphs At Runtime
 * Auto-Mocking using the Moq library
 * Injection across different Unity scenes
@@ -207,7 +209,6 @@ Inject by interface or by concrete class:
     _container.Bind<Foo>().ToSingle();
     _container.Bind<Foo>().ToTransient();
 
-
 For primitive types you have to use BindValue instead:
 
     _container.BindValue<float>().To(1.5f);
@@ -230,6 +231,66 @@ Creates a new game object and attaches FooMonoBehaviour to it:
 Customize creation logic yourself by defining a method:
 
     _container.Bind<IFoo>().ToMethod(SomeMethod);
+
+You can also bind multiple types to the same interface, with the result being a list of dependencies.  In this case Bar would get a list containing a new instance of Foo1, Foo2, and Foo3:
+
+    _container.Bind<IFoo>().ToSingle<Foo1>();
+    _container.Bind<IFoo>().ToSingle<Foo2>();
+    _container.Bind<IFoo>().ToSingle<Foo3>();
+
+    ...
+
+    public class Bar
+    {
+        public Bar(List<IFoo> foos)
+        {
+        }
+    }
+
+Note that when defining List dependencies, the empty list will result in an error.  If the empty list is valid, then you can suppress the error by marking the List as optional as described <a href="#optional_bindings">here</a>.
+
+## <a id="optional_bindings"></a>Optional Binding
+
+You can declare some dependencies as optional as follows:
+
+    public class Bar
+    {
+        public Bar(
+            [InjectOptional]
+            IFoo foo)
+        {
+            ...
+        }
+    }
+
+In this case, if IFoo is not bound in any installers, then it will be passed as null.
+
+Note that when declaring dependencies with primitive types as optional, they will be given their default value (eg. 0 for ints).  However, if you need to distiguish between being given a default value and the primitive dependency not being specified, you can do this as well by declaring it as nullable:
+
+    public class Bar
+    {
+        int _foo;
+
+        public Bar(
+            [InjectOptional]
+            int? foo)
+        {
+            if (foo == null)
+            {
+                // Use 5 if unspecified
+                _foo = 5;
+            }
+            else
+            {
+                _foo = foo.Value;
+            }
+        }
+    }
+
+    ...
+
+    // Can leave this commented or not and it will still work
+    // _container.BindValue<int>().To(1);
 
 ## <a id="conditional_bindings"></a>Conditional Bindings
 
