@@ -78,6 +78,7 @@ namespace ModestTree.Zenject.Test
 
             TestAssert.That(((FooDerived)foo).WasDerivedCalled);
             TestAssert.That(((FooBase)foo).WasBaseCalled);
+            TestAssert.That(((FooDerived)foo).WasDerivedCalled2);
         }
 
         interface IFoo
@@ -94,11 +95,17 @@ namespace ModestTree.Zenject.Test
                 TestAssert.That(!WasBaseCalled);
                 WasBaseCalled = true;
             }
+
+            [PostInject]
+            public virtual void TestVirtual1()
+            {
+            }
         }
 
         class FooDerived : FooBase
         {
             public bool WasDerivedCalled;
+            public bool WasDerivedCalled2;
 
             [PostInject]
             void TestDerived()
@@ -106,9 +113,14 @@ namespace ModestTree.Zenject.Test
                 TestAssert.That(!WasDerivedCalled);
                 WasDerivedCalled = true;
             }
+
+            [PostInject]
+            public override void TestVirtual1()
+            {
+                TestAssert.That(!WasDerivedCalled2);
+                WasDerivedCalled2 = true;
+            }
         }
     }
 }
-
-
 

@@ -77,7 +77,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test>().ToSingle();
             _container.Bind<Test>().ToSingle();
 
-            _container.Resolve<Test>();
+            var test1 = _container.Resolve<Test>();
         }
 
         [Test]
@@ -89,7 +89,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test>().ToSingle(instance);
             _container.Bind<Test>().ToSingle(instance);
 
-            _container.Resolve<Test>();
+            var test1 = _container.Resolve<Test>();
         }
     }
 }

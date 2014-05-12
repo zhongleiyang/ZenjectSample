@@ -29,7 +29,7 @@ namespace ModestTree.Zenject.Test
         {
             _container.Bind<Test2>().ToSingle();
 
-            _container.Resolve<Test2>();
+            var test1 = _container.Resolve<Test2>();
         }
 
         [Test]
@@ -76,7 +76,7 @@ namespace ModestTree.Zenject.Test
         public void TestParameterRequired()
         {
             _container.Bind<Test4>().ToSingle();
-            _container.Resolve<Test4>();
+            var test1 = _container.Resolve<Test4>();
         }
 
         [Test]

@@ -28,7 +28,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test1>().ToSingle();
             _container.Bind<Test2>().ToSingle();
 
-            _container.Resolve<Test2>();
+            var test = _container.Resolve<Test2>();
         }
     }
 }
