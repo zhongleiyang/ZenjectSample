@@ -30,9 +30,9 @@ namespace ModestTree.Zenject
 
                 if (!success)
                 {
-                    Debug.LogWarning(
-                        String.Format("Tickable with type '{0}' does not have a tick priority assigned",
-                        tickable.GetType()));
+                    //Debug.LogWarning(
+                        //String.Format("Tickable with type '{0}' does not have a tick priority assigned",
+                        //tickable.GetType()));
                 }
 
                 var tickInfo = (success ? new TickableInfo(tickable, priority) : new TickableInfo(tickable));

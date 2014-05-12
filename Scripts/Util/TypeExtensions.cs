@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Fasterflect;
 
 namespace ModestTree
 {
@@ -18,58 +19,11 @@ namespace ModestTree
             return b.IsAssignableFrom(a);
         }
 
-        public static AttributeType GetAttribute<AttributeType>(this ParameterInfo paramInfo) where AttributeType : class
-        {
-            var attributes = paramInfo.GetCustomAttributes(typeof(AttributeType), true);
-
-            if (attributes.Length == 0)
-            {
-                return null;
-            }
-
-            return attributes.Cast<AttributeType>().Single();
-        }
-
-        public static AttributeType GetAttribute<AttributeType>(this Type type) where AttributeType : class
-        {
-            var attributes = type.GetCustomAttributes(typeof(AttributeType), true);
-
-            if (attributes.Length == 0)
-            {
-                return null;
-            }
-
-            return attributes.Cast<AttributeType>().Single();
-        }
-
-        public static AttributeType GetAttribute<AttributeType>(this FieldInfo fieldInfo) where AttributeType : class
-        {
-            var attributes = fieldInfo.GetCustomAttributes(typeof(AttributeType), true);
-
-            if (attributes.Length == 0)
-            {
-                return null;
-            }
-
-            Assert.IsEqual(attributes.Length, 1, "Expected non-muliple attribute");
-            return attributes[0] as AttributeType;
-        }
-
-        public static bool HasAttribute<AttributeType>(this FieldInfo fieldInfo) where AttributeType : class
-        {
-            return fieldInfo.GetCustomAttributes(typeof(AttributeType), true).Any();
-        }
-
-        public static bool HasAttribute<AttributeType>(this Type type) where AttributeType : class
-        {
-            return type.GetCustomAttributes(typeof(AttributeType), true).Any();
-        }
-
         public static object GetDefaultValue(this Type type)
         {
-            if(type.IsValueType)
+            if (type.IsValueType)
             {
-                return Activator.CreateInstance(type);
+                return type.CreateInstance();
             }
 
             return null;
@@ -110,48 +64,6 @@ namespace ModestTree
 
             var unmangledName = typeDefinition.Substring(0, quoteIndex);
             return unmangledName + "<" + String.Join(",", genericArguments.Select<Type,string>(GetPrettyName).ToArray()) + ">";
-        }
-
-        public static IEnumerable<PropertyInfo> GetPropertiesWithAttribute<T>(this Type type)
-        {
-            return (from p in GetAllProperties(type) where p.GetCustomAttributes(typeof(T), true).Any() select p);
-        }
-
-        public static IEnumerable<FieldInfo> GetFieldsWithAttribute<T>(this Type type)
-        {
-            return (from f in GetAllFields(type) where f.GetCustomAttributes(typeof(T), true).Any() select f);
-        }
-
-        public static IEnumerable<MethodInfo> GetMethodsWithAttribute<T>(this Type type)
-        {
-            return (from m in GetAllMethods(type) where m.GetCustomAttributes(typeof(T), true).Any() select m);
-        }
-
-        public static IEnumerable<MethodInfo> GetAllMethods(this Type type)
-        {
-            // Recursion is necessary since otherwise we won't get private members in base classes
-            var baseClassMethods = type.BaseType == null ? Enumerable.Empty<MethodInfo>() : type.BaseType.GetAllMethods();
-
-            var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            return type.GetMethods(flags).Concat(baseClassMethods);
-        }
-
-        public static IEnumerable<FieldInfo> GetAllFields(this Type type)
-        {
-            // Recursion is necessary since otherwise we won't get private members in base classes
-            var baseClassFields = type.BaseType == null ? Enumerable.Empty<FieldInfo>() : type.BaseType.GetAllFields();
-
-            var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            return type.GetFields(flags).Concat(baseClassFields);
-        }
-
-        public static IEnumerable<PropertyInfo> GetAllProperties(this Type type)
-        {
-            // Recursion is necessary since otherwise we won't get private members in base classes
-            var baseClassProperties = (type.BaseType == null ? Enumerable.Empty<PropertyInfo>() : type.BaseType.GetAllProperties());
-
-            var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            return type.GetProperties(flags).Concat(baseClassProperties);
         }
     }
 }

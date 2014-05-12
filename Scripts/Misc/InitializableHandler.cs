@@ -26,9 +26,9 @@ namespace ModestTree.Zenject
 
                 if (!success)
                 {
-                    Debug.LogWarning(
-                        String.Format("IInitializable with type '{0}' does not have a priority assigned",
-                            initializable.GetType()));
+                    //Debug.LogWarning(
+                        //String.Format("IInitializable with type '{0}' does not have a priority assigned",
+                            //initializable.GetType()));
                 }
 
                 _initializables.Add(

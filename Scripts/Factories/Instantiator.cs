@@ -58,12 +58,12 @@ namespace ModestTree.Zenject
                     {
                         Target = concreteType,
                         FieldName = paramInfo.Name,
-                        Identifier = injectInfo == null ? null : injectInfo.Identifier,
+                        Identifier = injectInfo.Identifier,
                         Parents = new List<Type>(container.LookupsInProgress)
                     };
 
                     // Dependencies that are lists are only optional if declared as such using the inject attribute
-                    bool isOptional = (injectInfo == null ? false : injectInfo.Optional);
+                    bool isOptional = injectInfo.Optional;
 
                     object param = null;
 

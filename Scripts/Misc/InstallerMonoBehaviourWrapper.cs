@@ -1,6 +1,7 @@
 using ModestTree.Zenject;
 using System;
 using UnityEngine;
+using Fasterflect;
 
 namespace ModestTree.Zenject
 {
@@ -16,7 +17,7 @@ namespace ModestTree.Zenject
 
         public void RegisterBindings(DiContainer container)
         {
-            Assert.That(typeof(TImpl).HasAttribute<SerializableAttribute>(),
+            Assert.That(typeof(TImpl).HasAnyAttribute(typeof(SerializableAttribute)),
                 "Installer with type '{0}' is not Serializable", typeof(TImpl).GetPrettyName());
             Assert.IsNotNull(Impl);
 
