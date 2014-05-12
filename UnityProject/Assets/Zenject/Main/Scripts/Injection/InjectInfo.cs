@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Fasterflect;
 using UnityEngine;
 using System.Linq;
 
@@ -17,34 +18,31 @@ namespace ModestTree.Zenject
     {
         public static InjectInfo GetInjectInfo(ParameterInfo param)
         {
-            return GetInjectInfoInternal(param.GetCustomAttributes(typeof(InjectAttributeBase), true));
+            var info = new InjectInfo();
+
+            info.Optional = param.HasAttribute(typeof(InjectOptionalAttribute));
+
+            var injectAttr = param.Attribute<InjectAttribute>();
+
+            if (injectAttr != null)
+            {
+                info.Identifier = injectAttr.Identifier;
+            }
+
+            return info;
         }
 
         public static InjectInfo GetInjectInfo(MemberInfo member)
         {
-            return GetInjectInfoInternal(member.GetCustomAttributes(typeof(InjectAttributeBase), true));
-        }
-
-        static InjectInfo GetInjectInfoInternal(object[] attributes)
-        {
-            if (!attributes.Any())
-            {
-                return null;
-            }
-
             var info = new InjectInfo();
 
-            foreach (var attr in attributes)
+            info.Optional = member.HasAttribute(typeof(InjectOptionalAttribute));
+
+            var injectAttr = member.Attribute<InjectAttribute>();
+
+            if (injectAttr != null)
             {
-                if (attr.GetType() == typeof(InjectOptionalAttribute))
-                {
-                    info.Optional = true;
-                }
-                else if (attr.GetType() == typeof(InjectAttribute))
-                {
-                    var injectAttr = (InjectAttribute)attr;
-                    info.Identifier = injectAttr.Identifier;
-                }
+                info.Identifier = injectAttr.Identifier;
             }
 
             return info;
@@ -52,52 +50,57 @@ namespace ModestTree.Zenject
 
         public static IEnumerable<MethodInfo> GetPostInjectMethods(Type type)
         {
-            return type.GetMethodsWithAttribute<PostInjectAttribute>();
+            return type.MethodsWith(
+                Fasterflect.Flags.InstanceAnyVisibility | Fasterflect.Flags.ExcludeBackingMembers,
+                typeof(PostInjectAttribute));
         }
 
         public static IEnumerable<FieldInfo> GetFieldDependencies(Type type)
         {
-            return type.GetFieldsWithAttribute<InjectAttributeBase>();
+            return type.FieldsWith(
+                Fasterflect.Flags.InstanceAnyVisibility, typeof(InjectAttribute), typeof(InjectOptionalAttribute));
         }
 
         public static IEnumerable<PropertyInfo> GetPropertyDependencies(Type type)
         {
-            return type.GetPropertiesWithAttribute<InjectAttributeBase>();
+            return type.PropertiesWith(
+                Fasterflect.Flags.InstanceAnyVisibility | Fasterflect.Flags.ExcludeBackingMembers,
+                typeof(InjectAttribute), typeof(InjectOptionalAttribute));
         }
 
-        public static ParameterInfo[] GetConstructorDependencies(Type concreteType)
+        public static IList<ParameterInfo> GetConstructorDependencies(Type concreteType)
         {
             return GetConstructorDependencies(concreteType, true);
         }
 
-        public static ParameterInfo[] GetConstructorDependencies(Type concreteType, bool strict)
+        public static IList<ParameterInfo> GetConstructorDependencies(Type concreteType, bool strict)
         {
             ConstructorInfo method;
             return GetConstructorDependencies(concreteType, out method, strict);
         }
 
-        public static ParameterInfo[] GetConstructorDependencies(Type concreteType, out ConstructorInfo method)
+        public static IList<ParameterInfo> GetConstructorDependencies(Type concreteType, out ConstructorInfo method)
         {
             return GetConstructorDependencies(concreteType, out method, true);
         }
 
-        public static ParameterInfo[] GetConstructorDependencies(Type concreteType, out ConstructorInfo method, bool strict)
+        public static IList<ParameterInfo> GetConstructorDependencies(Type concreteType, out ConstructorInfo method, bool strict)
         {
-            var constructors = concreteType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+            var constructors = concreteType.Constructors(Flags.Public | Flags.InstanceAnyVisibility);
 
             if (constructors.IsEmpty())
             {
                 method = null;
-                return new ParameterInfo[0];
+                return new List<ParameterInfo>();
             }
 
-            if (constructors.Length > 1)
+            if (constructors.HasMoreThan(1))
             {
-                method = (from c in constructors where c.GetCustomAttributes(typeof(InjectAttribute), true).Any() select c).SingleOrDefault();
+                method = (from c in constructors where c.HasAnyAttribute(typeof(InjectAttribute)) select c).SingleOrDefault();
 
                 if (!strict && method == null)
                 {
-                    return new ParameterInfo[0];
+                    return new List<ParameterInfo>();
                 }
 
                 Assert.IsNotNull(method,
@@ -108,7 +111,7 @@ namespace ModestTree.Zenject
                 method = constructors[0];
             }
 
-            return method.GetParameters();
+            return method.Parameters();
         }
     }
 }

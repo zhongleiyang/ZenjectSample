@@ -6,6 +6,7 @@ using Debug = UnityEngine.Debug;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Fasterflect;
 
 namespace ModestTree
 {
@@ -20,9 +21,7 @@ namespace ModestTree
         {
             if (IsGenericList(type))
             {
-                var genericArgs = type.GetGenericArguments();
-                Assert.IsEqual(genericArgs.Length, 1);
-                contentsType = genericArgs[0];
+                contentsType = type.GetGenericArguments().Single();
                 return true;
             }
 
@@ -32,10 +31,7 @@ namespace ModestTree
 
         public static IList CreateGenericList(Type elementType, object[] contentsAsObj)
         {
-            var listType = typeof(List<>);
-            var constructedListType = listType.MakeGenericType(elementType);
-
-            var list = (IList)Activator.CreateInstance(constructedListType);
+            var list = (IList)typeof(List<>).MakeGenericType(elementType).CreateInstance();
 
             foreach (var obj in contentsAsObj)
             {
@@ -53,10 +49,7 @@ namespace ModestTree
         {
             Assert.That(keysAsObj.Length == valuesAsObj.Length);
 
-            var dictionaryType = typeof(Dictionary<,>);
-            var boundDictionaryType = dictionaryType.MakeGenericType(keyType, valueType);
-
-            var dictionary = (IDictionary)Activator.CreateInstance(boundDictionaryType);
+            var dictionary = (IDictionary)typeof(Dictionary<,>).MakeGenericType(keyType, valueType).CreateInstance();
 
             for (int i = 0; i < keysAsObj.Length; i++)
             {
@@ -78,18 +71,6 @@ namespace ModestTree
             return toList;
         }
 
-        public static List<string> GetFieldNamesWithAttribute<T>(Type type)
-        {
-            var names = new List<string>();
-
-            foreach (var field in type.GetFieldsWithAttribute<T>())
-            {
-                names.Add(field.Name);
-            }
-
-            return names;
-        }
-
         // Returns more intuitive defaults
         // eg. An empty string rather than null
         // An empty collection (eg. List<>) rather than null
@@ -105,7 +86,7 @@ namespace ModestTree
 
                 if (genericType == typeof(List<>) || genericType == typeof(Dictionary<,>))
                 {
-                    return Activator.CreateInstance(type);
+                    return type.CreateInstance();
                 }
             }
 
