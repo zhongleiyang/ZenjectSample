@@ -1,2 +1,4 @@
 *.suo
 *.pidb
+/UnityProject/Assets/Zenject/AddOns.meta
+/UnityProject/Assets/Zenject/AddOns
