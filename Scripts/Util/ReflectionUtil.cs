@@ -31,7 +31,9 @@ namespace ModestTree
 
         public static IList CreateGenericList(Type elementType, object[] contentsAsObj)
         {
-            var list = (IList)typeof(List<>).MakeGenericType(elementType).CreateInstance();
+            var genericType = typeof(List<>).MakeGenericType(elementType);
+
+            var list = (IList)Activator.CreateInstance(genericType);
 
             foreach (var obj in contentsAsObj)
             {
@@ -49,7 +51,9 @@ namespace ModestTree
         {
             Assert.That(keysAsObj.Length == valuesAsObj.Length);
 
-            var dictionary = (IDictionary)typeof(Dictionary<,>).MakeGenericType(keyType, valueType).CreateInstance();
+            var genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+
+            var dictionary = (IDictionary)Activator.CreateInstance(genericType);
 
             for (int i = 0; i < keysAsObj.Length; i++)
             {
@@ -86,7 +90,7 @@ namespace ModestTree
 
                 if (genericType == typeof(List<>) || genericType == typeof(Dictionary<,>))
                 {
-                    return type.CreateInstance();
+                    return Activator.CreateInstance(type);
                 }
             }
 

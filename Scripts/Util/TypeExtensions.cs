@@ -23,7 +23,7 @@ namespace ModestTree
         {
             if (type.IsValueType)
             {
-                return type.CreateInstance();
+                return Activator.CreateInstance(type);
             }
 
             return null;
