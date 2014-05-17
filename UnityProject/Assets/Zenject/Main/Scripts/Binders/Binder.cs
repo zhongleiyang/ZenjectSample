@@ -24,7 +24,7 @@ namespace ModestTree.Zenject
             return ToMethod(c => c.Resolve<TConcrete>().Create());
         }
 
-        public virtual BindingConditionSetter To(ProviderBase provider)
+        public virtual BindingConditionSetter ToProvider(ProviderBase provider)
         {
             _container.RegisterProvider<TContract>(provider);
             return new BindingConditionSetter(provider);
@@ -32,7 +32,12 @@ namespace ModestTree.Zenject
 
         public BindingConditionSetter ToMethod(Func<DiContainer, TContract> method)
         {
-            return To(new MethodProvider<TContract>(method, _container));
+            return ToProvider(new MethodProvider<TContract>(method, _container));
+        }
+
+        public BindingConditionSetter ToGetter<TObj>(Func<TObj, TContract> method)
+        {
+            return ToMethod(c => method(c.Resolve<TObj>()));
         }
     }
 }

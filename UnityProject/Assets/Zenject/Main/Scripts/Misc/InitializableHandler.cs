@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Fasterflect;
 
 namespace ModestTree.Zenject
 {
@@ -15,9 +16,15 @@ namespace ModestTree.Zenject
             [InjectOptional]
             List<IInitializable> initializables,
             [InjectOptional]
-            List<Tuple<Type, int>> priorities)
+            List<Tuple<Type, int>> priorities,
+            DiContainer container)
         {
             var priorityMap = priorities.ToDictionary(x => x.First, x => x.Second);
+
+            if (Assert.IsEnabled)
+            {
+                WarnForMissingBindings(initializables, container);
+            }
 
             foreach (var initializable in initializables)
             {
@@ -33,6 +40,17 @@ namespace ModestTree.Zenject
 
                 _initializables.Add(
                     new InitializableInfo(initializable, success ? (int?)priority : null));
+            }
+        }
+
+        void WarnForMissingBindings(List<IInitializable> initializables, DiContainer container)
+        {
+            var boundTypes = initializables.Select(x => x.GetType()).Distinct();
+            var unboundTypes = container.AllConcreteTypes.Where(x => x.DerivesFrom<IInitializable>() && !boundTypes.Contains(x));
+
+            foreach (var objType in unboundTypes)
+            {
+                Log.WarnFormat("Found unbound IInitializable with type '{0}'", objType.Name());
             }
         }
 
@@ -74,8 +92,8 @@ namespace ModestTree.Zenject
                 }
                 catch (Exception e)
                 {
-                    throw new ZenjectGeneralException(
-                        e, "Error occurred while initializing IInitializable with type '" + initializable.GetType().GetPrettyName() + "'");
+                    throw new ZenjectException(
+                        e, "Error occurred while initializing IInitializable with type '" + initializable.GetType().Name() + "'");
                 }
             }
         }

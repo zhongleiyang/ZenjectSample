@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Fasterflect;
 
 namespace ModestTree.Zenject
 {
@@ -19,9 +20,15 @@ namespace ModestTree.Zenject
             [InjectOptional]
             List<ITickable> tickables,
             [InjectOptional]
-            List<Tuple<Type, int>> priorities)
+            List<Tuple<Type, int>> priorities,
+            DiContainer container)
         {
             var priorityMap = priorities.ToDictionary(x => x.First, x => x.Second);
+
+            if (Assert.IsEnabled)
+            {
+                WarnForMissingBindings(tickables, container);
+            }
 
             foreach (var tickable in tickables)
             {
@@ -37,6 +44,18 @@ namespace ModestTree.Zenject
 
                 var tickInfo = (success ? new TickableInfo(tickable, priority) : new TickableInfo(tickable));
                 _queuedTasks.Add(tickInfo);
+            }
+        }
+
+        void WarnForMissingBindings(List<ITickable> tickables, DiContainer container)
+        {
+            var boundTypes = tickables.Select(x => x.GetType()).Distinct();
+
+            var unboundTypes = container.AllConcreteTypes.Where(x => x.DerivesFrom<ITickable>() && !boundTypes.Contains(x));
+
+            foreach (var objType in unboundTypes)
+            {
+                Log.WarnFormat("Found unbound ITickable with type '{0}'", objType.Name());
             }
         }
 

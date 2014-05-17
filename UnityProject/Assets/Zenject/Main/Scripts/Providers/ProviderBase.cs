@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 namespace ModestTree.Zenject
 {
     public abstract class ProviderBase : IDisposable
@@ -24,6 +25,8 @@ namespace ModestTree.Zenject
 
         public abstract object GetInstance();
         public abstract Type GetInstanceType();
+
+        public abstract void ValidateBinding();
 
         public virtual void Dispose()
         {

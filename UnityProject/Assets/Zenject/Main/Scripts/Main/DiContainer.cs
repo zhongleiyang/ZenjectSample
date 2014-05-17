@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Fasterflect;
 
 namespace ModestTree.Zenject
 {
@@ -17,11 +18,29 @@ namespace ModestTree.Zenject
 
         Stack<Type> _lookupsInProgress = new Stack<Type>();
         bool _hasDisposed;
+        bool _allowNullBindings;
 
         public DiContainer()
         {
             _singletonMap = new SingletonProviderMap(this);
-            Bind<DiContainer>().ToSingle(this);
+
+            Bind<DiContainer>().To(this);
+
+            // Pass an instance of Instantiator otherwise it will
+            // try to call itself to create itself
+            Bind<Instantiator>().ToSingle(new Instantiator(this));
+        }
+
+        public bool AllowNullBindings
+        {
+            get
+            {
+                return _allowNullBindings;
+            }
+            set
+            {
+                _allowNullBindings = value;
+            }
         }
 
         public IEnumerable<Type> AllContracts
@@ -29,6 +48,16 @@ namespace ModestTree.Zenject
             get
             {
                 return _providers.Keys;
+            }
+        }
+
+        // Note that this list is not exhaustive by any means
+        // It is also not necessary accurate
+        public IEnumerable<Type> AllConcreteTypes
+        {
+            get
+            {
+                return (from x in _providers from p in x.Value select p.GetInstanceType()).Where(x => !x.IsInterface && !x.IsAbstract).Distinct();
             }
         }
 
@@ -50,7 +79,7 @@ namespace ModestTree.Zenject
                 return "";
             }
 
-            return _lookupsInProgress.Select(t => t.GetPrettyName()).Reverse().Aggregate((i, str) => i + "\n" + str);
+            return _lookupsInProgress.Select(t => t.Name()).Reverse().Aggregate((i, str) => i + "\n" + str);
         }
 
         public void Dispose()
@@ -110,7 +139,7 @@ namespace ModestTree.Zenject
             {
                 // Prevent duplicate singleton bindings:
                 Assert.That(_providers[typeof(TContract)].Find(item => ReferenceEquals(item, provider)) == null,
-                "Found duplicate singleton binding for contract '" + typeof (TContract) + "'");
+                    "Found duplicate singleton binding for contract '" + typeof (TContract) + "'");
 
                 _providers[typeof (TContract)].Add(provider);
             }
@@ -141,10 +170,35 @@ namespace ModestTree.Zenject
             provider.Dispose();
         }
 
+        // Walk the object graph for the given type
+        // Throws ZenjectResolveException if there is a problem
+        public void ValidateResolve<TContract>()
+        {
+            BindingValidator.ValidateContract(this, typeof(TContract));
+        }
+
+        // Walk the object graph for the given type
+        // Throws ZenjectResolveException if there is a problem
+        public void ValidateResolve(Type contractType)
+        {
+            BindingValidator.ValidateContract(this, contractType);
+        }
+
+        public void ValidateCanCreateConcrete<TConcrete>()
+        {
+            ValidateCanCreateConcrete(typeof(TConcrete));
+        }
+
+        public void ValidateCanCreateConcrete(Type contractType)
+        {
+            Assert.That(!contractType.IsAbstract);
+            BindingValidator.ValidateCanCreateConcrete(this, contractType);
+        }
+
         public List<TContract> ResolveMany<TContract>()
         {
             Assert.That(!_hasDisposed);
-            return ResolveMany<TContract>(new ResolveContext());
+            return ResolveMany<TContract>(new ResolveContext(typeof(TContract)));
         }
 
         public List<TContract> ResolveMany<TContract>(ResolveContext context)
@@ -156,30 +210,33 @@ namespace ModestTree.Zenject
         public object ResolveMany(Type contract)
         {
             Assert.That(!_hasDisposed);
-            return ResolveMany(contract, new ResolveContext());
+            return ResolveMany(contract, new ResolveContext(contract));
         }
 
         List<object> ResolveInternalList(Type contract, ResolveContext context)
         {
             Assert.That(!_hasDisposed);
-            var instances = new List<object>();
+            return GetProviderMatches(contract, context).Select(x => x.GetInstance()).ToList();
+        }
+
+        internal IEnumerable<ProviderBase> GetProviderMatches(Type contract, ResolveContext context)
+        {
+            Assert.That(!_hasDisposed);
 
             List<ProviderBase> providers;
+
             if (_providers.TryGetValue(contract, out providers))
             {
-                foreach (var provider in providers.Where(x => x.Matches(context)))
-                {
-                    instances.Add(provider.GetInstance());
-                }
+                return providers.Where(x => x.Matches(context));
             }
 
-            return instances;
+            return Enumerable.Empty<ProviderBase>();
         }
 
         public bool HasBinding(Type contract)
         {
             Assert.That(!_hasDisposed);
-            return HasBinding(contract, new ResolveContext());
+            return HasBinding(contract, new ResolveContext(contract));
         }
 
         public bool HasBinding(Type contract, ResolveContext context)
@@ -214,11 +271,15 @@ namespace ModestTree.Zenject
 
             if (_providers.ContainsKey(contract))
             {
-                return ReflectionUtil.CreateGenericList(contract, ResolveInternalList(contract, context).ToArray());
+                return ReflectionUtil.CreateGenericList(
+                    contract, ResolveInternalList(contract, context).ToArray());
             }
 
-            Assert.That(optional, () =>
-                    "Could not find required dependency with type '" + contract.GetPrettyName() + "' \nObject graph:\n" + GetCurrentObjectGraph());
+            if (!optional)
+            {
+                throw new ZenjectResolveException(
+                    "Could not find required dependency with type '" + contract.Name() + "' \nObject graph:\n" + GetCurrentObjectGraph());
+            }
 
             // All many-dependencies are optional, return an empty list
             return ReflectionUtil.CreateGenericList(contract, new object[] {});
@@ -230,7 +291,7 @@ namespace ModestTree.Zenject
             if (_providers.ContainsKey(contract))
             {
                 // TODO: fix this to work with providers that have conditions
-                var context = new ResolveContext();
+                var context = new ResolveContext(contract);
 
                 return (from provider in _providers[contract] where provider.Matches(context) select provider.GetInstanceType()).ToList();
             }
@@ -238,11 +299,25 @@ namespace ModestTree.Zenject
             return new List<Type> {};
         }
 
+        internal object Resolve(InjectableInfo injectInfo)
+        {
+            return Resolve(injectInfo, null);
+        }
+
+        internal object Resolve(
+            InjectableInfo injectInfo, object targetInstance)
+        {
+            var context = new ResolveContext(
+                injectInfo, LookupsInProgress.ToList(), targetInstance);
+
+            return Resolve(injectInfo.ContractType, context, injectInfo.Optional);
+        }
+
         // Return single instance of requested type or assert
         public TContract Resolve<TContract>()
         {
             Assert.That(!_hasDisposed);
-            return Resolve<TContract>(new ResolveContext());
+            return Resolve<TContract>(new ResolveContext(typeof(TContract)));
         }
 
         public TContract Resolve<TContract>(ResolveContext context)
@@ -254,7 +329,7 @@ namespace ModestTree.Zenject
         public object Resolve(Type contract)
         {
             Assert.That(!_hasDisposed);
-            return Resolve(contract, new ResolveContext());
+            return Resolve(contract, new ResolveContext(contract));
         }
 
         public object Resolve(Type contract, ResolveContext context)
@@ -263,19 +338,32 @@ namespace ModestTree.Zenject
             return ResolveInternalSingle(contract, context, false);
         }
 
-        object ResolveInternalSingle(Type contract, ResolveContext context, bool optional)
+        public object Resolve(Type contract, ResolveContext context, bool optional)
+        {
+            Assert.That(!_hasDisposed);
+            return ResolveInternalSingle(contract, context, optional);
+        }
+
+        object ResolveInternalSingle(Type contractType, ResolveContext context, bool optional)
         {
             Assert.That(!_hasDisposed);
             // Note that different types can map to the same provider (eg. a base type to a concrete class and a concrete class to itself)
 
-            var objects = ResolveInternalList(contract, context);
+            var objects = ResolveInternalList(contractType, context);
 
-            if (!objects.Any())
+            if (objects.IsEmpty())
             {
+                // If it's a generic list then try matching multiple instances to its generic type
+                if (ReflectionUtil.IsGenericList(contractType))
+                {
+                    var subType = contractType.GetGenericArguments().Single();
+                    return ResolveMany(subType, context, optional);
+                }
+
                 if (!optional)
                 {
                     throw new ZenjectResolveException(
-                        "Unable to resolve type '{0}'. \nObject graph:\n{1}", contract.GetPrettyName(), GetCurrentObjectGraph());
+                        "Unable to resolve type '{0}'. \nObject graph:\n{1}", contractType.Name(), GetCurrentObjectGraph());
                 }
 
                 return null;
@@ -287,7 +375,7 @@ namespace ModestTree.Zenject
                 {
                     throw new ZenjectResolveException(
                         "Found multiple matches when only one was expected for type '{0}'. \nObject graph:\n {1}",
-                            contract.GetPrettyName(), GetCurrentObjectGraph());
+                            contractType.Name(), GetCurrentObjectGraph());
                 }
 
                 return null;
@@ -305,19 +393,10 @@ namespace ModestTree.Zenject
         public IEnumerable<Type> GetDependencyContracts(Type contract)
         {
             Assert.That(!_hasDisposed);
-            foreach (var param in InjectionInfoHelper.GetConstructorDependencies(contract, false))
-            {
-                yield return param.ParameterType;
-            }
 
-            foreach (var fieldInfo in InjectionInfoHelper.GetFieldDependencies(contract))
+            foreach (var injectMember in InjectablesFinder.GetAllInjectables(contract, false))
             {
-                yield return fieldInfo.FieldType;
-            }
-
-            foreach (var propInfo in InjectionInfoHelper.GetPropertyDependencies(contract))
-            {
-                yield return propInfo.PropertyType;
+                yield return injectMember.ContractType;
             }
         }
     }

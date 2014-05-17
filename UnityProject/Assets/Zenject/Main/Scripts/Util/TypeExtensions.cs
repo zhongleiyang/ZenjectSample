@@ -16,7 +16,17 @@ namespace ModestTree
         // This seems easier to think about than IsAssignableFrom
         public static bool DerivesFrom(this Type a, Type b)
         {
-            return b.IsAssignableFrom(a);
+            return b != a && b.IsAssignableFrom(a);
+        }
+
+        public static bool DerivesFromOrEqual<T>(this Type a)
+        {
+            return DerivesFromOrEqual(a, typeof(T));
+        }
+
+        public static bool DerivesFromOrEqual(this Type a, Type b)
+        {
+            return b == a || b.IsAssignableFrom(a);
         }
 
         public static object GetDefaultValue(this Type type)
@@ -45,25 +55,25 @@ namespace ModestTree
             return name.Substring(0, quoteIndex);
         }
 
-        public static string GetPrettyName(this Type type)
+        public static IEnumerable<Type> GetParentTypes(this Type type)
         {
-            if (type.GetGenericArguments().Length == 0)
+            if (type.BaseType == typeof(object))
             {
-                return type.Name;
+                yield break;
             }
 
-            var genericArguments = type.GetGenericArguments();
-            var typeDefinition = type.Name;
-            var quoteIndex = typeDefinition.IndexOf("`");
+            yield return type.BaseType;
 
-            if (quoteIndex < 0)
+            foreach (var ancestor in type.BaseType.GetParentTypes())
             {
-                // Not sure why this happens sometimes
-                return type.Name;
+                yield return ancestor;
             }
+        }
 
-            var unmangledName = typeDefinition.Substring(0, quoteIndex);
-            return unmangledName + "<" + String.Join(",", genericArguments.Select<Type,string>(GetPrettyName).ToArray()) + ">";
+        public static string NameWithParents(this Type type)
+        {
+            var typeList = type.GetParentTypes().Prepend(type).Select(x => x.Name()).ToArray();
+            return string.Join(":", typeList);
         }
     }
 }

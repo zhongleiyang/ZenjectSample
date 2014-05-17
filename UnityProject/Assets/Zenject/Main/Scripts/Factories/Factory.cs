@@ -9,6 +9,7 @@ namespace ModestTree.Zenject
     public class Factory<TContract, TConcrete> : IFactory<TContract> where TConcrete : TContract
     {
         readonly DiContainer _container;
+        Instantiator _instantiator;
 
         public Factory(DiContainer container)
         {
@@ -17,7 +18,12 @@ namespace ModestTree.Zenject
 
         public virtual TContract Create(params object[] constructorArgs)
         {
-            return Instantiator.Instantiate<TConcrete>(_container, constructorArgs);
+            if (_instantiator == null)
+            {
+                _instantiator = _container.Resolve<Instantiator>();
+            }
+
+            return _instantiator.Instantiate<TConcrete>(constructorArgs);
         }
     }
 
@@ -26,6 +32,7 @@ namespace ModestTree.Zenject
     {
         readonly DiContainer _container;
         readonly Type _concreteType;
+        Instantiator _instantiator;
 
         [Inject]
         public Factory(DiContainer container)
@@ -44,7 +51,12 @@ namespace ModestTree.Zenject
 
         public virtual TContract Create(params object[] constructorArgs)
         {
-            return (TContract)Instantiator.Instantiate(_container, _concreteType, constructorArgs);
+            if (_instantiator == null)
+            {
+                _instantiator = _container.Resolve<Instantiator>();
+            }
+
+            return (TContract)_instantiator.Instantiate(_concreteType, constructorArgs);
         }
     }
 }
