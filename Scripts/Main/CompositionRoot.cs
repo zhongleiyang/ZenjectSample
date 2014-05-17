@@ -42,7 +42,7 @@ namespace ModestTree.Zenject
             _container = new DiContainer();
 
             // Note: This has to go first
-            _container.Bind<CompositionRoot>().ToSingle(this);
+            _container.Bind<CompositionRoot>().To(this);
 
             if (_extraBindingLookup != null)
             {
@@ -53,6 +53,8 @@ namespace ModestTree.Zenject
 
         void Awake()
         {
+            Log.Debug("CompositionRoot Started");
+
             InitContainer();
             Register();
             Resolve();

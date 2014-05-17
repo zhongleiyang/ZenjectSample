@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Fasterflect;
 
 namespace ModestTree.Zenject
 {
@@ -14,11 +15,15 @@ namespace ModestTree.Zenject
         {
             _prefab = prefab;
             _container = container;
-            _instantiator = _container.Resolve<GameObjectInstantiator>();
         }
 
         public TContract Create(params object[] constructorArgs)
         {
+            if (_instantiator == null)
+            {
+                _instantiator = _container.Resolve<GameObjectInstantiator>();
+            }
+
             var gameObj = _instantiator.Instantiate(_prefab, constructorArgs);
 
             var component = gameObj.GetComponentInChildren<TContract>();
@@ -26,7 +31,7 @@ namespace ModestTree.Zenject
             if (component == null)
             {
                 throw new ZenjectResolveException(
-                    "Could not find component '{0}' when creating game object from prefab", typeof(TContract).GetPrettyName());
+                    "Could not find component '{0}' when creating game object from prefab", typeof(TContract).Name());
             }
 
             return component;

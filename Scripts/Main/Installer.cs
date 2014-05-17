@@ -17,7 +17,7 @@ namespace ModestTree.Zenject
         {
         }
 
-        public DiContainer Container
+        public virtual DiContainer Container
         {
             set
             {
@@ -35,4 +35,3 @@ namespace ModestTree.Zenject
         }
     }
 }
-

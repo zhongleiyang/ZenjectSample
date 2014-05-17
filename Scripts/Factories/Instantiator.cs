@@ -2,49 +2,56 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using Fasterflect;
 
 namespace ModestTree.Zenject
 {
-    public static class Instantiator
+    public class Instantiator
     {
-        public static T Instantiate<T>(
-            DiContainer container, params object[] constructorArgs)
+        readonly DiContainer _container;
+
+        public Instantiator(DiContainer container)
         {
-            return (T)Instantiate(container, typeof(T), constructorArgs);
+            _container = container;
         }
 
-        public static object Instantiate(
-            DiContainer container, Type concreteType, params object[] constructorArgs)
+        public T Instantiate<T>(
+            params object[] constructorArgs)
         {
-            using (container.PushLookup(concreteType))
+            return (T)Instantiate(typeof(T), constructorArgs);
+        }
+
+        public object Instantiate(
+            Type concreteType, params object[] constructorArgs)
+        {
+            using (_container.PushLookup(concreteType))
             {
-                return InstantiateInternal(container, concreteType, constructorArgs);
+                return InstantiateInternal(concreteType, constructorArgs);
             }
         }
 
-        static object InstantiateInternal(
-            DiContainer container, Type concreteType, params object[] constructorArgs)
+        object InstantiateInternal(
+            Type concreteType, params object[] constructorArgs)
         {
             ConstructorInfo method;
-            var parameterInfos = InjectionInfoHelper.GetConstructorDependencies(concreteType, out method);
+            var injectInfos = InjectablesFinder.GetConstructorInjectables(concreteType, out method);
 
-            var parameters = new List<object>();
+            var paramValues = new List<object>();
             var extrasList = new List<object>(constructorArgs);
 
             Assert.That(!extrasList.Contains(null),
                 "Null value given to factory constructor arguments. This is currently not allowed");
 
-            foreach (var paramInfo in parameterInfos)
+            foreach (var injectInfo in injectInfos)
             {
                 var found = false;
-                var desiredType = paramInfo.ParameterType;
 
                 foreach (var extra in extrasList)
                 {
-                    if (extra == null && !desiredType.IsValueType || desiredType.IsAssignableFrom(extra.GetType()))
+                    if (extra.GetType().DerivesFromOrEqual(injectInfo.ContractType))
                     {
                         found = true;
-                        parameters.Add(extra);
+                        paramValues.Add(extra);
                         extrasList.Remove(extra);
                         break;
                     }
@@ -52,40 +59,7 @@ namespace ModestTree.Zenject
 
                 if (!found)
                 {
-                    var injectInfo = InjectionInfoHelper.GetInjectInfo(paramInfo);
-
-                    var context = new ResolveContext()
-                    {
-                        Target = concreteType,
-                        FieldName = paramInfo.Name,
-                        Identifier = injectInfo.Identifier,
-                        Parents = new List<Type>(container.LookupsInProgress)
-                    };
-
-                    // Dependencies that are lists are only optional if declared as such using the inject attribute
-                    bool isOptional = injectInfo.Optional;
-
-                    object param = null;
-
-                    if (container.HasBinding(paramInfo.ParameterType, context))
-                    {
-                        param = container.Resolve(paramInfo.ParameterType, context);
-                    }
-                    else if (ReflectionUtil.IsGenericList(desiredType))
-                    // If it's a list it might map to a collection
-                    {
-                        var subType = desiredType.GetGenericArguments().Single();
-                        param = container.ResolveMany(subType, context, isOptional);
-                    }
-
-                    if (param == null && !isOptional)
-                    {
-                        throw new ZenjectResolveException(
-                            "Unable to find parameter with type '{0}' while constructing '{1}'.\nObject graph:\n{2}",
-                            paramInfo.ParameterType.GetPrettyName(), concreteType.GetPrettyName(), container.GetCurrentObjectGraph());
-                    }
-
-                    parameters.Add(param);
+                    paramValues.Add(_container.Resolve(injectInfo));
                 }
             }
 
@@ -93,17 +67,42 @@ namespace ModestTree.Zenject
 
             try
             {
-                newObj = method.Invoke(parameters.ToArray());
+                newObj = method.Invoke(paramValues.ToArray());
             }
             catch (Exception e)
             {
-                throw new ZenjectGeneralException(
-                    e, "Error occurred while instantiating object with type '" + concreteType.GetPrettyName() + "'");
+                throw new ZenjectResolveException(
+                    e, "Error occurred while instantiating object with type '" + concreteType.Name() + "'");
             }
 
-            FieldsInjecter.Inject(container, newObj, extrasList, true);
+            FieldsInjecter.Inject(_container, newObj, extrasList, true);
 
             return newObj;
+        }
+
+        object ResolveFromType(
+            ResolveContext context, object injectable, InjectableInfo injectInfo)
+        {
+            if (_container.HasBinding(injectInfo.ContractType, context))
+            {
+                return _container.Resolve(injectInfo.ContractType, context);
+            }
+
+            // If it's a list it might map to a collection
+            if (ReflectionUtil.IsGenericList(injectInfo.ContractType))
+            {
+                var subType = injectInfo.ContractType.GetGenericArguments().Single();
+                return _container.ResolveMany(subType, context, injectInfo.Optional);
+            }
+
+            if (!injectInfo.Optional)
+            {
+                throw new ZenjectResolveException(
+                    "Unable to find field with type '{0}' when injecting dependencies into '{1}'. \nObject graph:\n {2}",
+                    injectInfo.ContractType, injectable, _container.GetCurrentObjectGraph());
+            }
+
+            return null;
         }
     }
 }

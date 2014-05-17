@@ -62,10 +62,10 @@ namespace ModestTree.Zenject
                 _owner = owner;
             }
 
-            public override BindingConditionSetter To(ProviderBase provider)
+            public override BindingConditionSetter ToProvider(ProviderBase provider)
             {
                 _owner.AddProvider(provider);
-                return base.To(provider);
+                return base.ToProvider(provider);
             }
         }
 
@@ -81,10 +81,10 @@ namespace ModestTree.Zenject
                 _owner = owner;
             }
 
-            public override BindingConditionSetter To(ProviderBase provider)
+            public override BindingConditionSetter ToProvider(ProviderBase provider)
             {
                 _owner.AddProvider(provider);
-                return base.To(provider);
+                return base.ToProvider(provider);
             }
         }
     }

@@ -16,6 +16,11 @@ namespace ModestTree.Zenject
             Application.LoadLevel(levelName);
         }
 
+        public static void LoadSceneAdditive(string levelName)
+        {
+            LoadSceneAdditive(levelName, null);
+        }
+
         public static void LoadSceneAdditive(string levelName, Action<DiContainer> extraBindings)
         {
             CompositionRoot.ExtraBindingsLookup = extraBindings;

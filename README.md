@@ -39,6 +39,8 @@
 
 Zenject is a lightweight dependency injection framework built specifically to target Unity 3D.  It can be used to turn your Unity 3D application into a collection of loosely-coupled parts with highly segmented responsibilities.  Zenject can then glue the parts together in many different configurations to allow you to easily write, re-use, refactor and test your code in a scalable and extremely flexible way.
 
+Tested in Unity 3D on the following platforms: PC/Mac/Linux, iOS, Android, and Webplayer
+
 This project is open source.  You can find the official repository [here](https://github.com/modesttree/Zenject).  If you would like to contribute to the project pull requests are welcome!
 
 For general support or bug requests, please feel free to create issues on the github page.  You can also email me directly at svermeulen@modesttree.com

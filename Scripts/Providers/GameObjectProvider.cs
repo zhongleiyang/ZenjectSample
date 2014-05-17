@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace ModestTree.Zenject
@@ -36,6 +38,11 @@ namespace ModestTree.Zenject
             }
 
             return _instance;
+        }
+
+        public override void ValidateBinding()
+        {
+            BindingValidator.ValidateCanCreateConcrete(_container, typeof(T));
         }
     }
 }
