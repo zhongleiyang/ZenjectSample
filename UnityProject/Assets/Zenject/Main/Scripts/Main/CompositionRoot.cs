@@ -33,8 +33,40 @@ namespace ModestTree.Zenject
 
         void Register()
         {
-            // call RegisterBindings on any installers on our game object or somewhere below in the scene heirarchy
-            BroadcastMessage("RegisterBindings", _container, SendMessageOptions.RequireReceiver);
+            var sceneInstallers = (from c in gameObject.GetComponents<MonoBehaviour>() where c.GetType().DerivesFrom<ISceneInstaller>() select ((ISceneInstaller)(object)c));
+
+            if (sceneInstallers.HasMoreThan(1))
+            {
+                Debug.LogError("Found multiple scene installers when only one was expected while initializing CompositionRoot");
+                return;
+            }
+
+            if (sceneInstallers.IsEmpty())
+            {
+                Debug.LogError("Could not find scene installer while initializing CompositionRoot");
+                return;
+            }
+
+            var installer = sceneInstallers.Single();
+
+            var moduleContainer = new DiContainer();
+
+            installer.InstallModules(moduleContainer);
+
+            var modules = moduleContainer.ResolveMany<IModule>();
+
+            if (modules.IsEmpty())
+            {
+                Debug.LogError("No modules found while initializing CompositionRoot");
+                return;
+            }
+
+            Debug.Log("Initializing Composition Root with " + modules.Count() + " modules");
+
+            foreach (var module in modules)
+            {
+                module.AddBindings(_container);
+            }
         }
 
         void InitContainer()

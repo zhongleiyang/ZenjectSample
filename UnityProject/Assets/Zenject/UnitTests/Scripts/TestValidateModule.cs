@@ -10,7 +10,7 @@ using ModestTree.Zenject;
 namespace ModestTree.Zenject.Test
 {
     [TestFixture]
-    public class TestValidateInstaller
+    public class TestValidateModule
     {
         [Test]
         public void TestBasicSuccess()

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Diagnostics;
 using UnityEngine;
+using Fasterflect;
 
 namespace ModestTree.Zenject
 {
@@ -25,6 +26,37 @@ namespace ModestTree.Zenject
         {
             CompositionRoot.ExtraBindingsLookup = extraBindings;
             Application.LoadLevelAdditive(levelName);
+        }
+
+        public static void ValidateSceneInstaller<TInstaller>(params Type[] dynamicObjectGraphs) where TInstaller : MonoBehaviour, ISceneInstaller
+        {
+            var self = GameObject.FindObjectOfType<TInstaller>();
+
+            var modulesContainer = new DiContainer();
+            self.InstallModules(modulesContainer);
+
+            var container = new DiContainer();
+            foreach (var module in modulesContainer.ResolveMany<IModule>())
+            {
+                module.AddBindings(container);
+            }
+
+            try
+            {
+                container.ValidateResolve<IDependencyRoot>();
+
+                foreach (var dynType in dynamicObjectGraphs)
+                {
+                    container.ValidateCanCreateConcrete(dynType);
+                }
+            }
+            catch (ZenjectResolveException e)
+            {
+                UnityEngine.Debug.LogError("Validation failed for object graph given by '" + typeof(TInstaller).Name() + "'");
+                throw e;
+            }
+
+            UnityEngine.Debug.Log("Validation succeeded for object graph given by '" + typeof(TInstaller).Name() + "'");
         }
     }
 }

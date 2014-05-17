@@ -6,18 +6,16 @@ using Fasterflect;
 namespace ModestTree.Zenject
 {
     [Serializable]
-    public class TickablePrioritiesInstaller : Installer
+    public class TickablePrioritiesModule : IModule
     {
         List<Type> _tickables;
 
-        public TickablePrioritiesInstaller(
-            DiContainer container, List<Type> tickables)
-            : base(container)
+        public TickablePrioritiesModule(List<Type> tickables)
         {
             _tickables = tickables;
         }
 
-        public override void RegisterBindings()
+        public void AddBindings(DiContainer container)
         {
             int priorityCount = 1;
 
@@ -26,7 +24,7 @@ namespace ModestTree.Zenject
                 Assert.That(tickableType.DerivesFrom<ITickable>(),
                     "Expected type '{0}' to derive from ITickable", tickableType.Name());
 
-                _container.Bind<Tuple<Type, int>>().To(Tuple.New(tickableType, priorityCount)).WhenInjectedInto<StandardKernel>();
+                container.Bind<Tuple<Type, int>>().To(Tuple.New(tickableType, priorityCount)).WhenInjectedInto<StandardKernel>();
                 priorityCount++;
             }
         }

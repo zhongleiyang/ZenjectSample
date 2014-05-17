@@ -179,7 +179,7 @@ To add dependency bindings to your application, you need to write what is referr
     {
         public string SomeSetting;
 
-        public override void RegisterBindings()
+        public override void Install()
         {
             ...
             _container.Bind<IDependencyRoot>().ToSingle<GameRoot>();
@@ -191,9 +191,9 @@ To add dependency bindings to your application, you need to write what is referr
     {
     }
 
-The RegisterBindings() method is called once at the entry point of the application by the composition root.  Note here that the Installer class is not a MonoBehaviour and therefore cannot be dragged onto unity game objects.  This is to allow installers to easily trigger other installers and also to allow installers to be used in non-unity contexts (eg: NUnit tests).  However, it is also very useful to be able to simply drag and drop different sets of installers into a given unity scene, which is why in many cases you will want to provide the extra wrapper class.
+The Install() method is called once at the entry point of the application by the composition root.  Note here that the Installer class is not a MonoBehaviour and therefore cannot be dragged onto unity game objects.  This is to allow installers to easily trigger other installers and also to allow installers to be used in non-unity contexts (eg: NUnit tests).  However, it is also very useful to be able to simply drag and drop different sets of installers into a given unity scene, which is why in many cases you will want to provide the extra wrapper class.
 
-Once RegisterBindings() is called the installer can begin mapping out the object graph to be used in the application.  The syntax here will be familiar to users of many other DI frameworks (see <a href="#bindings">here</a> for detail)
+Once Install() is called the installer can begin mapping out the object graph to be used in the application.  The syntax here will be familiar to users of many other DI frameworks (see <a href="#bindings">here</a> for detail)
 
 Like many other DI frameworks, dependency mapping done by adding the binding to something called the container.  The container should then 'know' how to create all the object instances in our application, by recursively resolving all dependencies for a given object.  You can do this by calling the Resolve method:
 
@@ -414,7 +414,7 @@ Note that you do not need to use this approach (that is, ITickables and IInitial
 A Zenject driven application is executed by the following steps:
 
 * Composition Root is started (via Unity Awake() method)
-* Composition Root calls RegisterBindings() on all installers that are attached below it in the scene heirarchy
+* Composition Root calls Install() on all installers that are attached below it in the scene heirarchy
 * Each Installer registers different sets of dependencies directly on to the DiContainer by calling Bind<> and BindValue<> methods.  Note that the order that this binding occurs should not matter.
 * The Composition Root then traverses the scene heirarchy again and injects all MonoBehaviours with their dependencies.  Since MonoBehaviours are instantiated by Unity we cannot use constructor injection in this case and therefore field or property injection must be used (which is done by adding a [Inject] attribute to any member)
 * After filling in the scene dependencies the the Composition Root then calls `_container.Resolve` on the root object (that is, whatever is bound to IDependencyRoot).  In most cases code does not need to be in MonoBehaviours and will be resolved this way
@@ -445,7 +445,7 @@ A Zenject driven application is executed by the following steps:
     {
         public string Name;
 
-        public override void RegisterBindings()
+        public override void Install()
         {
             Install<StandardUnityInstaller>();
 
@@ -504,11 +504,11 @@ In many cases, especially for small projects, the order that classes update or i
 
 By default, ITickables and IInitializables are updated in the order that they are added, however for cases where the update or initialization order matters, there is a much better way.  By specifying their priorities explicitly in the installer.  For example, in the sample project you can find this code:
 
-        public override void RegisterBindings()
+        public override void Install()
         {
             ...
-            new TickablePrioritiesInstaller(_container, Tickables).RegisterBindings();
-            new InitializablePrioritiesInstaller(_container, Initializables).RegisterBindings();
+            new TickablePrioritiesInstaller(_container, Tickables).Install();
+            new InitializablePrioritiesInstaller(_container, Initializables).Install();
         }
 
         static List<Type> Tickables = new List<Type>()
