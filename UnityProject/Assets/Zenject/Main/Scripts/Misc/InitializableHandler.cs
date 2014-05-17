@@ -50,7 +50,7 @@ namespace ModestTree.Zenject
 
             foreach (var objType in unboundTypes)
             {
-                Log.WarnFormat("Found unbound IInitializable with type '{0}'", objType.Name());
+                Debug.LogWarning("Found unbound IInitializable with type '" + objType.Name() + "'");
             }
         }
 

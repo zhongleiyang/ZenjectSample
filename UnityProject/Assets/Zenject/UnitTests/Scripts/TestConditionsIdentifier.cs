@@ -39,46 +39,59 @@ namespace ModestTree.Zenject.Test
         }
 
         [Test]
-        [ExpectedException(typeof(ZenjectResolveException))]
         public void TestUnspecifiedNameConstructorInjection()
         {
             _container.Bind<Test0>().ToTransient();
-            _container.Resolve<Test1>();
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test1>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test1>(); });
         }
 
         [Test]
-        [ExpectedException(typeof(ZenjectResolveException))]
         public void TestUnspecifiedNameFieldInjection()
         {
             _container.Bind<Test0>().ToTransient();
-            _container.Resolve<Test2>();
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test2>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test2>(); });
         }
 
         [Test]
-        [ExpectedException(typeof(ZenjectResolveException))]
         public void TestTooManySpecified()
         {
             _container.Bind<Test0>().ToTransient();
             _container.Bind<Test0>().ToTransient();
 
-            TestAssert.IsNotNull(_container.Resolve<Test1>());
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test1>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test1>(); });
         }
 
         [Test]
         public void TestSuccessConstructorInjectionString()
         {
-            _container.Bind<Test0>().ToSingle(new Test0());
-            _container.Bind<Test0>().ToSingle(new Test0()).WhenInjectedInto("foo");
+            _container.Bind<Test0>().To(new Test0());
+            _container.Bind<Test0>().To(new Test0()).WhenInjectedInto("foo");
 
+            _container.ValidateResolve<Test1>();
             TestAssert.IsNotNull(_container.Resolve<Test1>());
         }
 
         [Test]
         public void TestSuccessFieldInjectionString()
         {
-            _container.Bind<Test0>().ToSingle(new Test0());
-            _container.Bind<Test0>().ToSingle(new Test0()).WhenInjectedInto("foo");
+            _container.Bind<Test0>().To(new Test0());
+            _container.Bind<Test0>().To(new Test0()).WhenInjectedInto("foo");
 
+            _container.ValidateResolve<Test2>();
             TestAssert.IsNotNull(_container.Resolve<Test2>());
         }
 
@@ -105,40 +118,48 @@ namespace ModestTree.Zenject.Test
         }
 
         [Test]
-        [ExpectedException(typeof(ZenjectResolveException))]
         public void TestFailConstructorInjectionEnum()
         {
-            _container.Bind<Test0>().ToSingle(new Test0());
-            _container.Bind<Test0>().ToSingle(new Test0()).WhenInjectedInto(TestEnum.TestValue1);
+            _container.Bind<Test0>().To(new Test0());
+            _container.Bind<Test0>().To(new Test0()).WhenInjectedInto(TestEnum.TestValue1);
 
-            TestAssert.IsNotNull(_container.Resolve<Test3>());
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test3>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test3>(); });
         }
 
         [Test]
         public void TestSuccessConstructorInjectionEnum()
         {
-            _container.Bind<Test0>().ToSingle(new Test0());
-            _container.Bind<Test0>().ToSingle(new Test0()).WhenInjectedInto(TestEnum.TestValue2);
+            _container.Bind<Test0>().To(new Test0());
+            _container.Bind<Test0>().To(new Test0()).WhenInjectedInto(TestEnum.TestValue2);
 
+            _container.ValidateResolve<Test3>();
             TestAssert.IsNotNull(_container.Resolve<Test3>());
         }
 
         [Test]
-        [ExpectedException(typeof(ZenjectResolveException))]
         public void TestFailFieldInjectionEnum()
         {
-            _container.Bind<Test0>().ToSingle(new Test0());
-            _container.Bind<Test0>().ToSingle(new Test0()).WhenInjectedInto(TestEnum.TestValue1);
+            _container.Bind<Test0>().To(new Test0());
+            _container.Bind<Test0>().To(new Test0()).WhenInjectedInto(TestEnum.TestValue1);
 
-            TestAssert.IsNotNull(_container.Resolve<Test3>());
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test3>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test3>(); });
         }
 
         [Test]
         public void TestSuccessFieldInjectionEnum()
         {
-            _container.Bind<Test0>().ToSingle(new Test0());
-            _container.Bind<Test0>().ToSingle(new Test0()).WhenInjectedInto(TestEnum.TestValue3);
+            _container.Bind<Test0>().To(new Test0());
+            _container.Bind<Test0>().To(new Test0()).WhenInjectedInto(TestEnum.TestValue3);
 
+            _container.ValidateResolve<Test4>();
             TestAssert.IsNotNull(_container.Resolve<Test4>());
         }
     }

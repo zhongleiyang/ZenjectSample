@@ -2,21 +2,22 @@ using System;
 using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
+using TestAssert=NUnit.Framework.Assert;
 
 namespace ModestTree.Zenject.Test
 {
     [TestFixture]
     public class TestResolveMany : TestWithContainer
     {
-        private class Test0
+        class Test0
         {
         }
 
-        private class Test1 : Test0
+        class Test1 : Test0
         {
         }
 
-        private class Test2 : Test0
+        class Test2 : Test0
         {
         }
 
@@ -28,15 +29,14 @@ namespace ModestTree.Zenject.Test
 
             List<Test0> many = _container.ResolveMany<Test0>();
 
-            Assert.That(many.Count == 2);
+            TestAssert.That(many.Count == 2);
         }
 
         [Test]
         public void TestCase2()
         {
             List<Test0> many = _container.ResolveMany<Test0>();
-
-            Assert.That(many.Count == 0);
+            TestAssert.That(many.Count == 0);
         }
     }
 }

@@ -55,7 +55,7 @@ namespace ModestTree.Zenject
 
             foreach (var objType in unboundTypes)
             {
-                Log.WarnFormat("Found unbound ITickable with type '{0}'", objType.Name());
+                Debug.LogWarning("Found unbound ITickable with type '" + objType.Name() + "'");
             }
         }
 

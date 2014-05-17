@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
+using TestAssert=NUnit.Framework.Assert;
 
 namespace ModestTree.Zenject.Test
 {
@@ -20,7 +21,6 @@ namespace ModestTree.Zenject.Test
         }
 
         [Test]
-        [ExpectedException]
         public void TestCaseDuplicateInjection()
         {
             _container.Bind<Test0>().ToSingle();
@@ -28,7 +28,11 @@ namespace ModestTree.Zenject.Test
 
             _container.Bind<Test1>().ToSingle();
 
-            _container.Resolve<Test1>();
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test1>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test1>(); });
         }
     }
 }

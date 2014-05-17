@@ -25,6 +25,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test2>().ToSingle();
             _container.BindValue<int>().To(1);
 
+            _container.ValidateResolve<Test2>();
             var test1 = _container.Resolve<Test2>();
             TestAssert.AreEqual(test1.val, 1);
         }

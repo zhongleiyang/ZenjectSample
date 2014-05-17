@@ -64,6 +64,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test2>().ToSingle();
             _container.Bind<Test3>().ToSingle();
 
+            _container.ValidateResolve<Test3>();
             var test3 = _container.Resolve<Test3>();
             TestAssert.That(test3.HasInitialized);
             TestAssert.That(test3.HasInitialized2);
@@ -74,6 +75,7 @@ namespace ModestTree.Zenject.Test
         {
             _container.Bind<IFoo>().ToSingle<FooDerived>();
 
+            _container.ValidateResolve<IFoo>();
             var foo = _container.Resolve<IFoo>();
 
             TestAssert.That(((FooDerived)foo).WasDerivedCalled);

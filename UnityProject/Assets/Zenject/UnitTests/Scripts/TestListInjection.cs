@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
+using TestAssert=NUnit.Framework.Assert;
 
 namespace ModestTree.Zenject.Test
 {
@@ -49,13 +50,14 @@ namespace ModestTree.Zenject.Test
         {
             _container.Bind<Test2>().ToSingle();
 
+            _container.ValidateResolve<Test2>();
             var result = _container.ResolveMany<Test2>();
 
-            Assert.That(result != null);
+            TestAssert.That(result != null);
         }
 
         [Test]
-        [ExpectedException]
+        [ExpectedException(typeof(ZenjectResolveException))]
         public void TestCase3()
         {
             _container.Bind<Test3>().ToSingle();
@@ -70,7 +72,7 @@ namespace ModestTree.Zenject.Test
 
             var result = _container.ResolveMany<Test4>();
 
-            Assert.That(result != null);
+            TestAssert.That(result != null);
         }
     }
 }

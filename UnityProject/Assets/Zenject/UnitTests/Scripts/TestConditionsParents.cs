@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
 using System.Linq;
+using TestAssert=NUnit.Framework.Assert;
 
 namespace ModestTree.Zenject.Test
 {
@@ -58,23 +59,27 @@ namespace ModestTree.Zenject.Test
         }
 
         [Test]
-        [ExpectedException]
         public void TestCase1()
         {
             _container.Bind<Test1>().ToSingle();
-            _container.Bind<Test0>().ToSingle().When(c => c.Parents.Contains(typeof(Test2)));
+            _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Contains(typeof(Test2)));
 
-            _container.Resolve<Test1>();
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test1>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test1>(); });
         }
 
         [Test]
         public void TestCase2()
         {
             _container.Bind<Test1>().ToSingle();
-            _container.Bind<Test0>().ToSingle().When(c => c.Parents.Contains(typeof(Test1)));
+            _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Contains(typeof(Test1)));
 
+            _container.ValidateResolve<Test1>();
             var test1 = _container.Resolve<Test1>();
-            Assert.That(test1 != null);
+            TestAssert.That(test1 != null);
         }
 
         // Test using parents to look deeper up the heirarchy..
@@ -88,45 +93,52 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test4>().ToSingle();
             _container.Bind<Test1>().ToTransient();
 
-            _container.Bind<Test0>().ToSingle(t0a).When(c => c.Parents.Contains(typeof(Test3)));
-            _container.Bind<Test0>().ToSingle(t0b).When(c => c.Parents.Contains(typeof(Test4)));
+            _container.Bind<Test0>().To(t0a).When(c => c.ParentTypes.Contains(typeof(Test3)));
+            _container.Bind<Test0>().To(t0b).When(c => c.ParentTypes.Contains(typeof(Test4)));
 
+            _container.ValidateResolve<Test3>();
             var test3 = _container.Resolve<Test3>();
+
+            _container.ValidateResolve<Test4>();
             var test4 = _container.Resolve<Test4>();
 
-            Assert.That(ReferenceEquals(test3.test1.test0, t0a));
-            Assert.That(ReferenceEquals(test4.test1.test0, t0b));
+            TestAssert.That(ReferenceEquals(test3.test1.test0, t0a));
+            TestAssert.That(ReferenceEquals(test4.test1.test0, t0b));
         }
 
         [Test]
-        [ExpectedException]
         public void TestCase4()
         {
             _container.Bind<ITest1>().ToSingle<Test2>();
-            _container.Bind<Test0>().ToSingle().When(c => c.Parents.Contains(typeof(ITest1)));
+            _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Contains(typeof(ITest1)));
 
-            var test1 = _container.Resolve<ITest1>();
-            Assert.That(test1 != null);
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<ITest1>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<ITest1>(); });
         }
 
         [Test]
         public void TestCase5()
         {
             _container.Bind<ITest1>().ToSingle<Test2>();
-            _container.Bind<Test0>().ToSingle().When(c => c.Parents.Contains(typeof(Test2)));
+            _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Contains(typeof(Test2)));
 
+            _container.ValidateResolve<ITest1>();
             var test1 = _container.Resolve<ITest1>();
-            Assert.That(test1 != null);
+            TestAssert.That(test1 != null);
         }
 
         [Test]
         public void TestCase6()
         {
             _container.Bind<ITest1>().ToSingle<Test2>();
-            _container.Bind<Test0>().ToSingle().When(c => c.Parents.Where(x => typeof(ITest1).IsAssignableFrom(x)).Any());
+            _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Where(x => typeof(ITest1).IsAssignableFrom(x)).Any());
 
+            _container.ValidateResolve<ITest1>();
             var test1 = _container.Resolve<ITest1>();
-            Assert.That(test1 != null);
+            TestAssert.That(test1 != null);
         }
     }
 }

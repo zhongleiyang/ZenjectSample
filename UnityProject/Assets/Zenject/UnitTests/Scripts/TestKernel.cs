@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Xml.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using TestAssert = NUnit.Framework.Assert;
@@ -26,12 +27,13 @@ namespace ModestTree.Zenject
         public void BindTickable<TTickable>(int priority) where TTickable : ITickable
         {
             _container.Bind<ITickable>().ToSingle<TTickable>();
-            _container.Bind<Tuple<Type, int>>().ToSingle(Tuple.New(typeof(TTickable), priority));
+            _container.Bind<Tuple<Type, int>>().To(Tuple.New(typeof(TTickable), priority));
         }
 
         [Test]
         public void TestTickablesAreOptional()
         {
+            _container.ValidateResolve<StandardKernel>();
             TestAssert.IsNotNull(_container.Resolve<StandardKernel>());
         }
 
@@ -47,10 +49,14 @@ namespace ModestTree.Zenject
             BindTickable<Tickable1>(0);
             BindTickable<Tickable2>(1);
 
+            _container.ValidateResolve<StandardKernel>();
             var kernel = _container.Resolve<StandardKernel>();
 
+            _container.ValidateResolve<Tickable1>();
             var tick1 = _container.Resolve<Tickable1>();
+            _container.ValidateResolve<Tickable2>();
             var tick2 = _container.Resolve<Tickable2>();
+            _container.ValidateResolve<Tickable3>();
             var tick3 = _container.Resolve<Tickable3>();
 
             int tickCount = 0;

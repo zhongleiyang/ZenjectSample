@@ -28,7 +28,11 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test1>().ToSingle();
             _container.Bind<Test2>().ToSingle();
 
-            var test = _container.Resolve<Test2>();
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.Resolve<Test2>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test2>(); });
         }
     }
 }

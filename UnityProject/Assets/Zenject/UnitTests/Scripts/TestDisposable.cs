@@ -31,13 +31,14 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test1>().ToSingle();
             _container.Bind<IDisposable>().ToSingle<Test1>();
 
+            _container.ValidateResolve<Test1>();
             var test = _container.Resolve<Test1>();
 
-            Assert.That(!test.HasDisposed);
+            TestAssert.That(!test.HasDisposed);
 
             _container.Dispose();
 
-            Assert.That(test.HasDisposed);
+            TestAssert.That(test.HasDisposed);
         }
     }
 }

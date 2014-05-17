@@ -26,8 +26,8 @@ namespace ModestTree.Zenject.Test
             base.Setup();
 
             _test1 = new Test1();
-            _container.Bind<Test0>().ToSingle().When(r => r.TargetInstance == _test1);
-            _container.Bind<Test1>().ToSingle(_test1);
+            _container.Bind<Test0>().ToSingle().When(r => r.EnclosingInstance == _test1);
+            _container.Bind<Test1>().To(_test1);
         }
 
         [Test]

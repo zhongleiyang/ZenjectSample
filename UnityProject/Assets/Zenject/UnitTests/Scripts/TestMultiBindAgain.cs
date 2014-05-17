@@ -49,6 +49,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().ToSingle<Test4>();
             _container.Bind<Test2>().ToSingle();
 
+            _container.ValidateResolve<Test2>();
             _container.Resolve<Test2>();
         }
     }

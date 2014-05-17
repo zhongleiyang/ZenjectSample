@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
+using TestAssert=NUnit.Framework.Assert;
 
 namespace ModestTree.Zenject.Test
 {
@@ -34,12 +35,13 @@ namespace ModestTree.Zenject.Test
 
             _container.Bind<Factory<Test1>>().ToSingle();
 
+            _container.ValidateResolve<Factory<Test1>>();
             var factory = _container.Resolve<Factory<Test1>>();
 
             var test = factory.Create(t1, 5.0f, t2);
 
-            Assert.That(ReferenceEquals(test.t1, t1));
-            Assert.That(ReferenceEquals(test.t2, t2));
+            TestAssert.That(ReferenceEquals(test.t1, t1));
+            TestAssert.That(ReferenceEquals(test.t2, t2));
         }
     }
 }

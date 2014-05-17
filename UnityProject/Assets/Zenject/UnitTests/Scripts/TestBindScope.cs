@@ -20,10 +20,14 @@ namespace ModestTree.Zenject.Test
             {
                 var test1 = new Test0();
 
-                scope.Bind<Test0>().ToSingle(test1);
+                scope.Bind<Test0>().To(test1);
 
-                Assert.That(ReferenceEquals(test1, _container.Resolve<Test0>()));
+                _container.ValidateResolve<Test0>();
+                TestAssert.That(ReferenceEquals(test1, _container.Resolve<Test0>()));
             }
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test0>(); });
 
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test0>(); });
@@ -45,17 +49,25 @@ namespace ModestTree.Zenject.Test
             {
                 var test0Local = new Test0();
 
-                scope.Bind<Test0>().ToSingle(test0Local);
+                scope.Bind<Test0>().To(test0Local);
                 scope.Bind<Test1>().ToSingle();
 
+                _container.ValidateResolve<Test0>();
                 test0 = _container.Resolve<Test0>();
                 TestAssert.AreEqual(test0Local, test0);
 
+                _container.ValidateResolve<Test1>();
                 test1 = _container.Resolve<Test1>();
             }
 
             TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test0>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test0>(); });
+
+            TestAssert.Throws<ZenjectResolveException>(
+                delegate { _container.ValidateResolve<Test1>(); });
 
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test1>(); });
@@ -63,7 +75,10 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().ToSingle();
             _container.Bind<Test1>().ToSingle();
 
+            _container.ValidateResolve<Test0>();
             TestAssert.That(_container.Resolve<Test0>() != test0);
+
+            _container.ValidateResolve<Test1>();
             TestAssert.That(_container.Resolve<Test1>() != test1);
         }
     }
