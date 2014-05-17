@@ -40,7 +40,7 @@ namespace ModestTree.Asteroids
 
             _container.BindFactory<Asteroid>();
             // Every time a new asteroid is created, instantiate a new game object for it using the given prefab
-            //_container.Bind<AsteroidHooks>().ToTransientFromPrefab<AsteroidHooks>(_settings.Asteroid.Prefab).WhenInjectedInto<Asteroid>();
+            _container.Bind<AsteroidHooks>().ToTransientFromPrefab<AsteroidHooks>(_settings.Asteroid.Prefab).WhenInjectedInto<Asteroid>();
 
             _container.Bind<IInitializable>().ToSingle<GameController>();
             _container.Bind<ITickable>().ToSingle<GameController>();
