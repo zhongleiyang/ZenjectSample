@@ -14,17 +14,17 @@ namespace ModestTree.Asteroids
             _instantiator = instantiator;
         }
 
-        public ShipState Create(EShipState state, params object[] constructorArgs)
+        public ShipState Create(ShipStates state, params object[] constructorArgs)
         {
             switch (state)
             {
-                case EShipState.Dead:
+                case ShipStates.Dead:
                     return _instantiator.Instantiate<ShipStateDead>(constructorArgs);
 
-                case EShipState.Moving:
+                case ShipStates.Moving:
                     return _instantiator.Instantiate<ShipStateMoving>(constructorArgs);
 
-                case EShipState.WaitingToStart:
+                case ShipStates.WaitingToStart:
                     return _instantiator.Instantiate<ShipStateWaitingToStart>(constructorArgs);
             }
 

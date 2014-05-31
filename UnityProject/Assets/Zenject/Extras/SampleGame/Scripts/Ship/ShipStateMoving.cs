@@ -82,7 +82,7 @@ namespace ModestTree.Asteroids
         public override void OnTriggerEnter(Collider other)
         {
             Assert.That(other.tag == "asteroid");
-            _ship.ChangeState(EShipState.Dead, _ship);
+            _ship.ChangeState(ShipStates.Dead, _ship);
         }
 
         [Serializable]

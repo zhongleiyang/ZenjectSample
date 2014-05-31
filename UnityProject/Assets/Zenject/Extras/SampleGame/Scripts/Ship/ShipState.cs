@@ -5,7 +5,7 @@ using ModestTree.Zenject;
 
 namespace ModestTree.Asteroids
 {
-    public enum EShipState
+    public enum ShipStates
     {
         Moving,
         Dead,

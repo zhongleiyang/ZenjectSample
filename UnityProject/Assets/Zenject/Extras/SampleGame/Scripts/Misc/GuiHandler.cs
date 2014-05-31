@@ -28,17 +28,17 @@ namespace ModestTree.Asteroids
             {
                 switch (_gameController.State)
                 {
-                    case GameState.WaitingToStart:
+                    case GameStates.WaitingToStart:
                     {
                         StartGui();
                         break;
                     }
-                    case GameState.Playing:
+                    case GameStates.Playing:
                     {
                         PlayingGui();
                         break;
                     }
-                    case GameState.GameOver:
+                    case GameStates.GameOver:
                     {
                         PlayingGui();
                         GameOverGui();

@@ -68,7 +68,7 @@ namespace ModestTree.Asteroids
 
         public void Initialize()
         {
-            _state = _stateFactory.Create(EShipState.WaitingToStart, this);
+            _state = _stateFactory.Create(ShipStates.WaitingToStart, this);
             _hooks.TriggerEnter += OnTriggerEnter;
         }
 
@@ -82,7 +82,7 @@ namespace ModestTree.Asteroids
             _state.OnTriggerEnter(other);
         }
 
-        public void ChangeState(EShipState state, params object[] constructorArgs)
+        public void ChangeState(ShipStates state, params object[] constructorArgs)
         {
             if (_state != null)
             {

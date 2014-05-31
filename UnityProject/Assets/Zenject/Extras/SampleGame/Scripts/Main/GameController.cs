@@ -4,7 +4,7 @@ using ModestTree.Zenject;
 
 namespace ModestTree.Asteroids
 {
-    public enum GameState
+    public enum GameStates
     {
         WaitingToStart,
         Playing,
@@ -14,7 +14,7 @@ namespace ModestTree.Asteroids
     public class GameController : IInitializable, ITickable
     {
         Ship _ship;
-        GameState _state = GameState.WaitingToStart;
+        GameStates _state = GameStates.WaitingToStart;
         AsteroidManager _asteroidSpawner;
         float _elapsedTime;
 
@@ -23,7 +23,7 @@ namespace ModestTree.Asteroids
             get { return _elapsedTime; }
         }
 
-        public GameState State
+        public GameStates State
         {
             get
             {
@@ -49,17 +49,17 @@ namespace ModestTree.Asteroids
         {
             switch (_state)
             {
-                case GameState.WaitingToStart:
+                case GameStates.WaitingToStart:
                 {
                     UpdateStarting();
                     break;
                 }
-                case GameState.Playing:
+                case GameStates.Playing:
                 {
                     UpdatePlaying();
                     break;
                 }
-                case GameState.GameOver:
+                case GameStates.GameOver:
                 {
                     UpdateGameOver();
                     break;
@@ -74,7 +74,7 @@ namespace ModestTree.Asteroids
 
         void UpdateGameOver()
         {
-            Assert.That(_state == GameState.GameOver);
+            Assert.That(_state == GameStates.GameOver);
 
             if (Input.GetMouseButtonDown(0))
             {
@@ -84,20 +84,20 @@ namespace ModestTree.Asteroids
 
         void OnShipCrashed()
         {
-            Assert.That(_state == GameState.Playing);
-            _state = GameState.GameOver;
+            Assert.That(_state == GameStates.Playing);
+            _state = GameStates.GameOver;
             _asteroidSpawner.Stop();
         }
 
         void UpdatePlaying()
         {
-            Assert.That(_state == GameState.Playing);
+            Assert.That(_state == GameStates.Playing);
             _elapsedTime += Time.deltaTime;
         }
 
         void UpdateStarting()
         {
-            Assert.That(_state == GameState.WaitingToStart);
+            Assert.That(_state == GameStates.WaitingToStart);
 
             if (Input.GetMouseButtonDown(0))
             {
@@ -107,13 +107,13 @@ namespace ModestTree.Asteroids
 
         void StartGame()
         {
-            Assert.That(_state == GameState.WaitingToStart || _state == GameState.GameOver);
+            Assert.That(_state == GameStates.WaitingToStart || _state == GameStates.GameOver);
 
             _ship.Position = Vector3.zero;
             _elapsedTime = 0;
             _asteroidSpawner.Start();
-            _ship.ChangeState(EShipState.Moving);
-            _state = GameState.Playing;
+            _ship.ChangeState(ShipStates.Moving);
+            _state = GameStates.Playing;
         }
     }
 }

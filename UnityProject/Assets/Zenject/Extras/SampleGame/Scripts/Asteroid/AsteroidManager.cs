@@ -153,21 +153,16 @@ namespace ModestTree.Asteroids
             switch (side)
             {
                 case Side.Top:
-                {
                     return new Vector3(_level.Left + rand * _level.Width, _level.Top + scale, 0);
-                }
+
                 case Side.Bottom:
-                {
                     return new Vector3(_level.Left + rand * _level.Width, _level.Bottom - scale, 0);
-                }
+
                 case Side.Right:
-                {
                     return new Vector3(_level.Right + scale, _level.Bottom + rand * _level.Height, 0);
-                }
+
                 case Side.Left:
-                {
                     return new Vector3(_level.Left - scale, _level.Bottom + rand * _level.Height, 0);
-                }
             }
 
             Assert.That(false);
