@@ -5,7 +5,5 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
+  - enabled: 1
     path: Assets/Zenject/Extras/SampleGame/Asteroids.unity
-  - enabled: 0
-    path: Assets/Tests/Test2.unity
