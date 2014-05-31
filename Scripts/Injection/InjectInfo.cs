@@ -25,12 +25,12 @@ namespace ModestTree.Zenject
         public static IEnumerable<InjectableInfo> GetAllInjectables(Type type, bool strict)
         {
             return GetConstructorInjectables(type, strict)
-                .Append(GetFieldAndPropertyInjectables(type));
+                .Concat(GetFieldAndPropertyInjectables(type));
         }
 
         public static IEnumerable<InjectableInfo> GetFieldAndPropertyInjectables(Type type)
         {
-            return GetFieldInjectables(type).Append(GetPropertyInjectables(type));
+            return GetFieldInjectables(type).Concat(GetPropertyInjectables(type));
         }
 
         public static IEnumerable<InjectableInfo> GetPropertyInjectables(Type type)

@@ -28,7 +28,7 @@ namespace ModestTree.Zenject
 
             // Pass an instance of Instantiator otherwise it will
             // try to call itself to create itself
-            Bind<Instantiator>().ToSingle(new Instantiator(this));
+            Bind<Instantiator>().To(new Instantiator(this));
         }
 
         public bool AllowNullBindings
@@ -86,7 +86,10 @@ namespace ModestTree.Zenject
         {
             Assert.That(!_hasDisposed);
 
-            foreach (var disposable in ResolveMany<IDisposable>())
+            // In order to specify the parameter for soft we need to use the full ugly method call
+            var disposables = (List<IDisposable>)ResolveMany(typeof(IDisposable), new ResolveContext(typeof(IDisposable)), true, true);
+
+            foreach (var disposable in disposables)
             {
                 disposable.Dispose();
             }
@@ -172,27 +175,38 @@ namespace ModestTree.Zenject
 
         // Walk the object graph for the given type
         // Throws ZenjectResolveException if there is a problem
-        public void ValidateResolve<TContract>()
+        public IEnumerable<ZenjectResolveException> ValidateResolve<TContract>()
         {
-            BindingValidator.ValidateContract(this, typeof(TContract));
+            return BindingValidator.ValidateContract(this, typeof(TContract));
         }
 
         // Walk the object graph for the given type
         // Throws ZenjectResolveException if there is a problem
-        public void ValidateResolve(Type contractType)
+        public IEnumerable<ZenjectResolveException> ValidateResolve(Type contractType)
         {
-            BindingValidator.ValidateContract(this, contractType);
+            return BindingValidator.ValidateContract(this, contractType);
         }
 
-        public void ValidateCanCreateConcrete<TConcrete>()
+        public IEnumerable<ZenjectResolveException> ValidateObjectGraph<TConcrete>(params Type[] extras)
         {
-            ValidateCanCreateConcrete(typeof(TConcrete));
+            return ValidateObjectGraph(typeof(TConcrete), extras);
         }
 
-        public void ValidateCanCreateConcrete(Type contractType)
+        public IEnumerable<ZenjectResolveException> ValidateObjectGraphsForTypes(params Type[] types)
+        {
+            foreach (var type in types)
+            {
+                foreach (var error in ValidateObjectGraph(type))
+                {
+                    yield return error;
+                }
+            }
+        }
+
+        public IEnumerable<ZenjectResolveException> ValidateObjectGraph(Type contractType, params Type[] extras)
         {
             Assert.That(!contractType.IsAbstract);
-            BindingValidator.ValidateCanCreateConcrete(this, contractType);
+            return BindingValidator.ValidateObjectGraph(this, contractType, extras);
         }
 
         public List<TContract> ResolveMany<TContract>()
@@ -215,8 +229,22 @@ namespace ModestTree.Zenject
 
         List<object> ResolveInternalList(Type contract, ResolveContext context)
         {
+            return ResolveInternalList(contract, context, false);
+        }
+
+        // Soft == only resolve if the instance is already created
+        List<object> ResolveInternalList(Type contract, ResolveContext context, bool soft)
+        {
             Assert.That(!_hasDisposed);
-            return GetProviderMatches(contract, context).Select(x => x.GetInstance()).ToList();
+
+            var providers = GetProviderMatches(contract, context);
+
+            if (soft)
+            {
+                providers = providers.Where(x => x.HasInstance());
+            }
+
+            return providers.Select(x => x.GetInstance()).ToList();
         }
 
         internal IEnumerable<ProviderBase> GetProviderMatches(Type contract, ResolveContext context)
@@ -261,10 +289,18 @@ namespace ModestTree.Zenject
         public object ResolveMany(Type contract, ResolveContext context)
         {
             Assert.That(!_hasDisposed);
+            // Default to optional when resolving multiple types (which returns empty list)
             return ResolveMany(contract, context, true);
         }
 
         public object ResolveMany(Type contract, ResolveContext context, bool optional)
+        {
+            Assert.That(!_hasDisposed);
+            // Soft == false, always create new instances when possible
+            return ResolveMany(contract, context, optional, false);
+        }
+
+        public object ResolveMany(Type contract, ResolveContext context, bool optional, bool soft)
         {
             Assert.That(!_hasDisposed);
             // Note that different types can map to the same provider (eg. a base type to a concrete class and a concrete class to itself)
@@ -272,7 +308,7 @@ namespace ModestTree.Zenject
             if (_providers.ContainsKey(contract))
             {
                 return ReflectionUtil.CreateGenericList(
-                    contract, ResolveInternalList(contract, context).ToArray());
+                    contract, ResolveInternalList(contract, context, soft).ToArray());
             }
 
             if (!optional)
@@ -281,7 +317,6 @@ namespace ModestTree.Zenject
                     "Could not find required dependency with type '" + contract.Name() + "' \nObject graph:\n" + GetCurrentObjectGraph());
             }
 
-            // All many-dependencies are optional, return an empty list
             return ReflectionUtil.CreateGenericList(contract, new object[] {});
         }
 
@@ -363,7 +398,7 @@ namespace ModestTree.Zenject
                 if (!optional)
                 {
                     throw new ZenjectResolveException(
-                        "Unable to resolve type '{0}'. \nObject graph:\n{1}", contractType.Name(), GetCurrentObjectGraph());
+                        "Unable to resolve type '{0}' while building object with type '{1}'. \nObject graph:\n{2}", contractType.Name(), context.EnclosingType, GetCurrentObjectGraph());
                 }
 
                 return null;
@@ -374,8 +409,8 @@ namespace ModestTree.Zenject
                 if (!optional)
                 {
                     throw new ZenjectResolveException(
-                        "Found multiple matches when only one was expected for type '{0}'. \nObject graph:\n {1}",
-                            contractType.Name(), GetCurrentObjectGraph());
+                        "Found multiple matches when only one was expected for type '{0}' while building object with type '{1}'. \nObject graph:\n {2}",
+                            context.EnclosingType, contractType.Name(), GetCurrentObjectGraph());
                 }
 
                 return null;

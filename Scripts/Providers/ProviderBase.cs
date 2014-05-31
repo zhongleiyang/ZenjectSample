@@ -23,10 +23,15 @@ namespace ModestTree.Zenject
             _condition = condition;
         }
 
+        // Returns true if this provider already has an instance to return
+        // and false in the case where the provider would create it next time
+        // GetInstance is called
+        public abstract bool HasInstance();
+
         public abstract object GetInstance();
         public abstract Type GetInstanceType();
 
-        public abstract void ValidateBinding();
+        public abstract IEnumerable<ZenjectResolveException> ValidateBinding();
 
         public virtual void Dispose()
         {

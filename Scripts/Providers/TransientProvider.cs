@@ -19,6 +19,11 @@ namespace ModestTree.Zenject
             return typeof(T);
         }
 
+        public override bool HasInstance()
+        {
+            return false;
+        }
+
         public override object GetInstance()
         {
             var obj = _factory.Create();
@@ -26,9 +31,9 @@ namespace ModestTree.Zenject
             return obj;
         }
 
-        public override void ValidateBinding()
+        public override IEnumerable<ZenjectResolveException> ValidateBinding()
         {
-            BindingValidator.ValidateCanCreateConcrete(_container, typeof(T));
+            return BindingValidator.ValidateObjectGraph(_container, typeof(T));
         }
     }
 }

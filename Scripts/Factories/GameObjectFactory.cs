@@ -13,6 +13,12 @@ namespace ModestTree.Zenject
 
         public GameObjectFactory(DiContainer container, GameObject prefab)
         {
+            if (!container.AllowNullBindings && prefab == null)
+            {
+                throw new ZenjectBindException(
+                    "Null prefab given for binding with type '{0}'", typeof(TContract));
+            }
+
             _prefab = prefab;
             _container = container;
         }

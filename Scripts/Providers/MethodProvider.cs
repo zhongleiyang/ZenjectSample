@@ -21,6 +21,11 @@ namespace ModestTree.Zenject
             return typeof(T);
         }
 
+        public override bool HasInstance()
+        {
+            return false;
+        }
+
         public override object GetInstance()
         {
             var obj = _method(_container);
@@ -33,9 +38,9 @@ namespace ModestTree.Zenject
             return obj;
         }
 
-        public override void ValidateBinding()
+        public override IEnumerable<ZenjectResolveException> ValidateBinding()
         {
-            // Can't validate method bindings so just assume its valid
+            return Enumerable.Empty<ZenjectResolveException>();
         }
     }
 }
