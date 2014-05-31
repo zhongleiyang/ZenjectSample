@@ -109,7 +109,7 @@ namespace ModestTree.Zenject
             }
             else
             {
-                Debug.LogError("Zenject error: Must be running a zenject scene to generate object graph");
+                Debug.LogError("Zenject error: Must be in play mode to generate object graph.  Hit Play button and try again.");
             }
         }
 
