@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
 using ModestTree.Zenject;
+using System.Linq;
 
 namespace ModestTree.Asteroids
 {
@@ -63,6 +64,14 @@ namespace ModestTree.Asteroids
 
             _container.Bind<AsteroidManager.Settings>().ToSingle(_settings.Asteroid.Spawner);
             _container.Bind<Asteroid.Settings>().ToSingle(_settings.Asteroid.General);
+        }
+
+        public override IEnumerable<ZenjectResolveException> ValidateSubGraphs()
+        {
+            return Validate<Asteroid>().Concat(
+                   Validate<ShipStateDead>(typeof(Ship))).Concat(
+                   Validate<ShipStateMoving>(typeof(Ship))).Concat(
+                   Validate<ShipStateWaitingToStart>(typeof(Ship)));
         }
 
         [Serializable]

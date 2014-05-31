@@ -11,29 +11,28 @@
     * <a href="#theory">Theory</a>
     * <a href="#misconceptions">Misconceptions</a>
 * Zenject API
-    * <a href="#getting_started">Getting Started</a>
-    * <a href="#zenject_overview">API Basic Overview</a>
-        * <a href="#composition_root">Composition Root / Installers</a>
+    * <a href="#zenject_overview">Overview of the Zenject API</a>
+        * <a href="#hello_world">Hellow World Example</a>
         * <a href="#bindings">Binding</a>
         * <a href="#optional_bindings">Optional Binding</a>
         * <a href="#conditional_bindings">Conditional Bindings</a>
-        * <a href="#dependency_root">Dependency Root</a>
+        * <a href="#dependency_root">The Dependency Root</a>
         * <a href="#tickables">ITickable</a>
         * <a href="#postinject">IInitializable and PostInject</a>
+        * <a href="#composition_root">Composition Root, Installers, And Modules</a>
     * <a href="#operation_order">Zenject Order Of Operations</a>
     * <a href="#rules">Rules / Guidelines / Recommendations</a>
-    * <a href="#hello_world">Hello World Example</a>
     * Advanced Features
         * <a href="#update_order">Update Order And Initialization Order</a>
         * <a href="#across_scenes">Injecting Data Across Scenes</a>
-        * <a href="#automocking">Auto-Mocking Using Moq</a>
-        * <a href="#graphviz">Visualizing Your Object Graph Automatically</a>
+        * <a href="#graph_validation">Object Graph Validation</a>
         * <a href="#dynamic_creation">Creating Objects Dynamically</a>
         * <a href="#bindscope">Using BindScope</a>
         * <a href="#disposables">Implementing IDisposable</a>
-* FAQ
-    * <a href="#strange">How is this different from Strange IoC?</a>
-    * More to come!
+        * <a href="#automocking">Auto-Mocking Using Moq</a>
+        * <a href="#graphviz">Visualizing Object Graph Automatically</a>
+    * <a href="#help">Further Help</a>
+    * <a href="#license">License</a>
 
 ## <a id="introduction"></a>Introduction
 
@@ -595,66 +594,48 @@ Then, instead of injecting directly into the LevelHandler we can inject into the
 
 Note that in this case I didn't need to use the "LevelName" identifier since there is only one string injected into the GameModule class, however I find it's sometimes nice to be explicit.
 
-## <a id="automocking"></a>Auto-Mocking using Moq
+## <a id="settings"></a>Using the Unity Inspector To Configure Settings
 
-One of the really cool features of DI is the fact that it makes testing code much, much easier.  This is because you can easily substitute one dependency for another by using a different Composition Root.  For example, if you only want to test a particular class (let's call it Foo) and don't care about testing its dependencies, you might write 'mocks' for them so that you can isolate Foo specifically.
+One implication of preferring to write your code as normal C# classes instead of MonoBehaviour's is that you lose the ability to configure data on them using the inspector.  You can however still take advantage of this using Zenject by using the following pattern:
 
-    public class Foo
+TBD
+
+## <a id="graph_validation"></a>Object Graph Validation
+
+The usual workflow when setting up bindings using a DI framework is something like this:
+
+* Add some number of bindings in code
+* Execute your app
+* Observe a bunch of DI related exceptions
+* Modify your bindings to address problem
+* Repeat
+
+This works ok for small projects, but as the complexity of your project grows it is often a tedious process.  The problem gets worse if the startup time of your application is particularly bad.  What would be great is some tool to analyze your object graph and tell you exactly where all the missing bindings are, without requiring the cost of firing up your whole app.
+
+You can do this in Zenject out-of-the-box by executing the menu item `Assets -> Zenject -> Validate Current Scene` or simply hitting CTRL+SHIFT+V with the scene open that you want to validate.  This will execute the scene installer for the current scene and construct a fully bound container.   It will then iterate through the object graphs and verify that all bindings can be found (without actually instantiating any of them).
+
+Also, if you happen to be a fan of automated testing (as I am) then you can include object graph validation as part of that by calling `ZenUtil.ValidateInstaller([scene installer])`
+
+## <a id="dynamic_graph_validation"></a>Dynamic Object Graph Validation
+
+The above approach great for dependencies that are attached to the dependency root, as well as any dependencies that are attached to any MonoBehaviour's that are saved into the scene, but what about classes that are instantiated at runtime via factories?  How do you validate those object graphs?
+
+If you want to be thorough (and I recommend it) then you can include these object graphs as well, by including an extra method in your modules to declare these object graphs.  For example, in the sample project, we define the following:
+
+    public class AsteroidsMainModule : Module
     {
-        IWebServer _webServer;
-
-        public Foo(IWebServer webServer)
+        ...
+        public override IEnumerable<ZenjectResolveException> ValidateSubGraphs()
         {
-            _webServer = webServer;
+            return Validate<Asteroid>().Concat(
+                   Validate<ShipStateDead>(typeof(Ship))).Concat(
+                   Validate<ShipStateMoving>(typeof(Ship))).Concat(
+                   Validate<ShipStateWaitingToStart>(typeof(Ship)));
         }
-
-        public void Initialize()
-        {
-            ...
-            var x = _webServer.GetSomething();
-            ...
-        }
-    }
-
-In this example, we have a class Foo that interacts with a web server to retrieve content.  This would normally be very difficult to test for the following reasons:
-
-* You would have to set up an environment where it can properly connect to a web server (configuring ports, urls, etc.)
-* Running the test could be slower and limit how much testing you can do
-* The web server itself could contain bugs so you couldn't with certainty isolate Foo as the problematic part of the test
-* You can't easily configure the values returned from the web server to test sending various inputs to the Foo class
-
-However, if we create a mock class for IWebServer then we can address all these problems:
-
-    public class MockWebServer : IWebServer
-    {
         ...
     }
 
-Then hook it up in our installer:
-
-    _container.Bind<IWebServer>().ToSingle<MockWebServer>();
-
-Then you can implement the fields of the IWebServer interface and configure them based on what you want to test on Foo. Hopefully You can see how this can make life when writing tests much easier.
-
-Zenject also allows you to even avoid having to write the MockWebServer class in favour of using a very useful library called "Moq" which does all the work for you.
-
-Note that by default, Auto-mocking is not enabled in Zenject.  If you wish to use the auto-mocking feature then you need to go to your Zenject install directory and extract the contents of "Extras/ZenjectAutoMocking.zip".  Note also that AutoMocking is incompatible with webplayer builds, and you will also need to change your "Api Compatibility Level" from ".NET 2.0 Subset" to ".NET 2.0" (you can find this in PC build settings)
-
-After extracting the auto mocking package it is just a matter of using the following syntax to mock out various parts of your project:
-
-    _container.Bind<IFoo>().ToMock();
-
-However, this approach will not allow you to take advantage of the advanced features of Moq.  In order to do that, I recommend peeking in to the ToMock() method to see how that works.
-
-## <a id="graphviz"></a>Visualizing Object Graphs Automatically
-
-Zenject allows users to generate UML-style images of the object graphs for their applications.  You can do this simply by running your Zenject-driven app, then selecting from the menu `Assets -> Zenject -> Output Object Graph For Current Scene`.  You will be prompted for a location to save the generated image file.
-
-Note that you will need to have graphviz installed for this to work (which you can find [here](http://www.graphviz.org/)).  You will be prompted to choose the location the first time.
-
-The result is two files (Foo.dot and Foo.png).  The dot file is included in case you want to add custom graphviz commands.  As an example, this is the graph that is generated when run on the sample project:
-
-<img src="ExampleObjectGraph.png?raw=true" alt="Example Object Graph" width="600px" height="127px"/>
+This information is used when validating to cover the dynamic object graphs.  Note that in many cases the dynamically created object will get all of its required dependencies out of the container, but in some cases the dependencies will be provided manually, via calls to `[Factory].Create()` (for eg. the ship state classes above).  In these cases you need to tell Zenject to ignore these dependencies by passing in a list of types.
 
 ## <a id="dynamic_creation"></a>Creating Objects Dynamically
 
@@ -938,6 +919,73 @@ Then in your installer you can include:
 This works because when the scene changes or your unity application is closed, the unity event OnDestroy() is called on all MonoBehaviours, including the CompositionRoot class.  The CompositionRoot class, which owns your DiContainer, calls Dispose() on the DiContainer, which then calls Dispose() on all objects that are bound to IDisposable.
 
 Note that this example may or may not be a good idea (for example, the file will be left open if your app crashes), but illustrates the point  :)
+
+## <a id="automocking"></a>Auto-Mocking using Moq
+
+One of the really cool features of DI is the fact that it makes testing code much, much easier.  This is because you can easily substitute one dependency for another by using a different Composition Root.  For example, if you only want to test a particular class (let's call it Foo) and don't care about testing its dependencies, you might write 'mocks' for them so that you can isolate Foo specifically.
+
+    public class Foo
+    {
+        IWebServer _webServer;
+
+        public Foo(IWebServer webServer)
+        {
+            _webServer = webServer;
+        }
+
+        public void Initialize()
+        {
+            ...
+            var x = _webServer.GetSomething();
+            ...
+        }
+    }
+
+In this example, we have a class Foo that interacts with a web server to retrieve content.  This would normally be very difficult to test for the following reasons:
+
+* You would have to set up an environment where it can properly connect to a web server (configuring ports, urls, etc.)
+* Running the test could be slower and limit how much testing you can do
+* The web server itself could contain bugs so you couldn't with certainty isolate Foo as the problematic part of the test
+* You can't easily configure the values returned from the web server to test sending various inputs to the Foo class
+
+However, if we create a mock class for IWebServer then we can address all these problems:
+
+    public class MockWebServer : IWebServer
+    {
+        ...
+    }
+
+Then hook it up in our installer:
+
+    _container.Bind<IWebServer>().ToSingle<MockWebServer>();
+
+Then you can implement the fields of the IWebServer interface and configure them based on what you want to test on Foo. Hopefully You can see how this can make life when writing tests much easier.
+
+Zenject also allows you to even avoid having to write the MockWebServer class in favour of using a very useful library called "Moq" which does all the work for you.
+
+Note that by default, Auto-mocking is not enabled in Zenject.  If you wish to use the auto-mocking feature then you need to go to your Zenject install directory and extract the contents of "Extras/ZenjectAutoMocking.zip".  Note also that AutoMocking is incompatible with webplayer builds, and you will also need to change your "Api Compatibility Level" from ".NET 2.0 Subset" to ".NET 2.0" (you can find this in PC build settings)
+
+After extracting the auto mocking package it is just a matter of using the following syntax to mock out various parts of your project:
+
+    _container.Bind<IFoo>().ToMock();
+
+However, this approach will not allow you to take advantage of the advanced features of Moq.  In order to do that, I recommend peeking in to the ToMock() method to see how that works.
+
+## <a id="graphviz"></a>Visualizing Object Graphs Automatically
+
+Zenject allows users to generate UML-style images of the object graphs for their applications.  You can do this simply by running your Zenject-driven app, then selecting from the menu `Assets -> Zenject -> Output Object Graph For Current Scene`.  You will be prompted for a location to save the generated image file.
+
+Note that you will need to have graphviz installed for this to work (which you can find [here](http://www.graphviz.org/)).  You will be prompted to choose the location the first time.
+
+The result is two files (Foo.dot and Foo.png).  The dot file is included in case you want to add custom graphviz commands.  As an example, this is the graph that is generated when run on the sample project:
+
+<img src="ExampleObjectGraph.png?raw=true" alt="Example Object Graph" width="600px" height="127px"/>
+
+## <a id="help"></a>Further Help
+
+There currently does not exist a support forum yet.  In the meantime, I would recommend creating an issue on the Zenject github repository, which you can find [here](https://github.com/modesttree/Zenject).
+
+Alternatively, you can contact me directly at svermeulen@modesttree.com
 
 ## <a id="license"></a>License
 

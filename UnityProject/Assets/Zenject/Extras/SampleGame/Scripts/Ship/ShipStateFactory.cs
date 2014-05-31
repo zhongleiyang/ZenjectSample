@@ -7,21 +7,29 @@ namespace ModestTree.Asteroids
 {
     public class ShipStateFactory
     {
-        private IFactory<ShipState>[] _factories;
+        Instantiator _instantiator;
 
-        public ShipStateFactory(DiContainer container)
+        public ShipStateFactory(Instantiator instantiator)
         {
-            _factories = new IFactory<ShipState>[(int) EShipState.Count]
-            {
-                new Factory<ShipState, ShipStateMoving>(container),
-                new Factory<ShipState, ShipStateDead>(container),
-                new Factory<ShipState, ShipStateWaitingToStart>(container),
-            };
+            _instantiator = instantiator;
         }
 
         public ShipState Create(EShipState state, params object[] constructorArgs)
         {
-            return _factories[(int)state].Create(constructorArgs);
+            switch (state)
+            {
+                case EShipState.Dead:
+                    return _instantiator.Instantiate<ShipStateDead>(constructorArgs);
+
+                case EShipState.Moving:
+                    return _instantiator.Instantiate<ShipStateMoving>(constructorArgs);
+
+                case EShipState.WaitingToStart:
+                    return _instantiator.Instantiate<ShipStateWaitingToStart>(constructorArgs);
+            }
+
+            Assert.That(false);
+            return null;
         }
     }
 }
