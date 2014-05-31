@@ -11,7 +11,6 @@ namespace ModestTree.Asteroids
         Main,
     }
 
-    [Serializable]
     // The main installer for Asteroids
     public class AsteroidsMainModule : Module
     {
