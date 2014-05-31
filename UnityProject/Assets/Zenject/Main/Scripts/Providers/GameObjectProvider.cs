@@ -23,6 +23,11 @@ namespace ModestTree.Zenject
             return typeof(T);
         }
 
+        public override bool HasInstance()
+        {
+            return _instance != null;
+        }
+
         public override object GetInstance()
         {
             if (_instance == null)
@@ -40,9 +45,9 @@ namespace ModestTree.Zenject
             return _instance;
         }
 
-        public override void ValidateBinding()
+        public override IEnumerable<ZenjectResolveException> ValidateBinding()
         {
-            BindingValidator.ValidateCanCreateConcrete(_container, typeof(T));
+            return BindingValidator.ValidateObjectGraph(_container, typeof(T));
         }
     }
 }

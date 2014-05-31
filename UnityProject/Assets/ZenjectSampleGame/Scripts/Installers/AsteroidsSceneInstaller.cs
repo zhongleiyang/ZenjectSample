@@ -16,28 +16,17 @@ namespace ModestTree.Asteroids
         {
             container.Bind<AsteroidsMainModule.Settings>().To(Settings.Main);
 
-            container.Bind<IModule>().ToSingle<StandardUnityModule>();
-            container.Bind<IModule>().ToSingle<InitializablePrioritiesModule>();
-            container.Bind<IModule>().ToSingle<TickablePrioritiesModule>();
+            container.Bind<Module>().ToSingle<StandardUnityModule>();
+            container.Bind<Module>().ToSingle<InitializablePrioritiesModule>();
+            container.Bind<Module>().ToSingle<TickablePrioritiesModule>();
 
-            container.Bind<IModule>().ToSingle<AsteroidsMainModule>();
+            container.Bind<Module>().ToSingle<AsteroidsMainModule>();
 
             container.Bind<List<Type>>().To(Initializables)
                 .WhenInjectedInto<InitializablePrioritiesModule>();
 
             container.Bind<List<Type>>().To(Tickables)
                 .WhenInjectedInto<TickablePrioritiesModule>();
-        }
-
-        // We can select this menu item to quickly validate the object graphs in our zenject app
-        // before running it
-        // Every time we change an installer we can quickly hit CTRL+SHIFT+V to validate the scene
-        // before running it
-        // If your team has a CI server this can also be included for automated testing!
-        [MenuItem("Asteroids/Validate Object Graph #%v")]
-        public static void ValidateObjectGraph()
-        {
-            ZenUtil.ValidateSceneInstaller<AsteroidsSceneInstaller>(typeof(Asteroid));
         }
 
         static List<Type> Initializables = new List<Type>()

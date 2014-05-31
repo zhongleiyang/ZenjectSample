@@ -23,10 +23,10 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().ToSingle<Test1>();
             _container.Bind<Test1>().ToSingle();
 
-            _container.ValidateResolve<Test0>();
+            TestAssert.That(_container.ValidateResolve<Test0>().IsEmpty());
             var test1 = _container.Resolve<Test0>();
 
-            _container.ValidateResolve<Test1>();
+            TestAssert.That(_container.ValidateResolve<Test1>().IsEmpty());
             var test2 = _container.Resolve<Test1>();
 
             TestAssert.That(ReferenceEquals(test1, test2));

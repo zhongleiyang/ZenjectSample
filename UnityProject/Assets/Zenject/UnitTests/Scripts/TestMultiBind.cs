@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
 using TestAssert=NUnit.Framework.Assert;
+using System.Linq;
 
 namespace ModestTree.Zenject.Test
 {
@@ -44,7 +45,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test1>().ToSingle<Test3>();
             _container.Bind<TestImpl1>().ToSingle();
 
-            _container.ValidateResolve<TestImpl1>();
+            TestAssert.That(_container.ValidateResolve<TestImpl1>().IsEmpty());
             var test1 = _container.Resolve<TestImpl1>();
 
             TestAssert.That(test1.tests.Count == 2);
@@ -59,8 +60,7 @@ namespace ModestTree.Zenject.Test
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<TestImpl1>(); });
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<TestImpl1>(); });
+            TestAssert.That(_container.ValidateResolve<TestImpl1>().Any());
         }
 
         [Test]
@@ -71,8 +71,7 @@ namespace ModestTree.Zenject.Test
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<TestImpl1>(); });
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<TestImpl1>(); });
+            TestAssert.That(_container.ValidateResolve<Test2>().Any());
         }
 
         [Test]
@@ -82,7 +81,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test1>().ToSingle<Test3>();
             _container.Bind<TestImpl2>().ToSingle();
 
-            _container.ValidateResolve<TestImpl2>();
+            TestAssert.That(_container.ValidateResolve<TestImpl2>().IsEmpty());
             var test = _container.Resolve<TestImpl2>();
             TestAssert.That(test.tests.Count == 2);
         }

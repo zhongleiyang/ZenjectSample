@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
+using TestAssert=NUnit.Framework.Assert;
 
 namespace ModestTree.Zenject.Test
 {
@@ -49,7 +50,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().ToSingle<Test4>();
             _container.Bind<Test2>().ToSingle();
 
-            _container.ValidateResolve<Test2>();
+            TestAssert.That(_container.ValidateResolve<Test2>().IsEmpty());
             _container.Resolve<Test2>();
         }
     }

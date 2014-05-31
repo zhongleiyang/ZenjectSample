@@ -13,6 +13,7 @@ namespace ModestTree.Zenject
         IDependencyRoot _dependencyRoot;
 
         static Action<DiContainer> _extraBindingLookup;
+        static Action<DiContainer> _extraInstallerBindingLookup;
 
         internal static Action<DiContainer> ExtraBindingsLookup
         {
@@ -20,6 +21,15 @@ namespace ModestTree.Zenject
             {
                 Assert.IsNull(_extraBindingLookup);
                 _extraBindingLookup = value;
+            }
+        }
+
+        internal static Action<DiContainer> ExtraInstallerBindingsLookup
+        {
+            set
+            {
+                Assert.IsNull(_extraInstallerBindingLookup);
+                _extraInstallerBindingLookup = value;
             }
         }
 
@@ -53,11 +63,17 @@ namespace ModestTree.Zenject
 
             installer.InstallModules(moduleContainer);
 
-            var modules = moduleContainer.ResolveMany<IModule>();
+            if (_extraInstallerBindingLookup != null)
+            {
+                _extraInstallerBindingLookup(moduleContainer);
+                _extraInstallerBindingLookup = null;
+            }
+
+            var modules = moduleContainer.ResolveMany<Module>();
 
             if (modules.IsEmpty())
             {
-                Debug.LogError("No modules found while initializing CompositionRoot");
+                Debug.Log("No modules found while initializing CompositionRoot");
                 return;
             }
 
@@ -65,7 +81,8 @@ namespace ModestTree.Zenject
 
             foreach (var module in modules)
             {
-                module.AddBindings(_container);
+                module.Container = _container;
+                module.AddBindings();
             }
         }
 
@@ -85,8 +102,6 @@ namespace ModestTree.Zenject
 
         void Awake()
         {
-            //Log.Debug("CompositionRoot Started");
-
             InitContainer();
             Register();
             Resolve();

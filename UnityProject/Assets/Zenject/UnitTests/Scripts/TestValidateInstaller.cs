@@ -6,11 +6,12 @@ using NUnit.Framework;
 using UnityEngine;
 using TestAssert = NUnit.Framework.Assert;
 using ModestTree.Zenject;
+using System.Linq;
 
 namespace ModestTree.Zenject.Test
 {
     [TestFixture]
-    public class TestValidateModule
+    public class TestValidateInstaller
     {
         [Test]
         public void TestBasicSuccess()
@@ -20,11 +21,10 @@ namespace ModestTree.Zenject.Test
             container.Bind<IFoo>().ToSingle<Foo>();
             container.Bind<Bar>().ToSingle();
 
-            container.ValidateResolve<IFoo>();
+            TestAssert.That(container.ValidateResolve<IFoo>().IsEmpty());
         }
 
         [Test]
-        [ExpectedException(typeof(ZenjectResolveException))]
         public void TestBasicFailure()
         {
             var container = new DiContainer();
@@ -32,7 +32,7 @@ namespace ModestTree.Zenject.Test
             container.Bind<IFoo>().ToSingle<Foo>();
             //container.Bind<Bar>().ToSingle();
 
-            container.ValidateResolve<IFoo>();
+            TestAssert.That(!container.ValidateResolve<IFoo>().IsEmpty());
         }
 
         [Test]
@@ -47,7 +47,37 @@ namespace ModestTree.Zenject.Test
 
             container.Bind<Qux>().ToSingle();
 
-            container.ValidateResolve<Qux>();
+            TestAssert.That(container.ValidateResolve<Qux>().IsEmpty());
+        }
+
+        [Test]
+        public void TestValidateDynamicSuccess()
+        {
+            var container = new DiContainer();
+
+            container.Bind<Foo>().ToSingle();
+
+            TestAssert.That(container.ValidateObjectGraph<Foo>(typeof(Bar)).IsEmpty());
+        }
+
+        [Test]
+        public void TestValidateDynamicFailure()
+        {
+            var container = new DiContainer();
+
+            container.Bind<Foo>().ToSingle();
+
+            TestAssert.That(!container.ValidateObjectGraph<Foo>().IsEmpty());
+        }
+
+        [Test]
+        public void TestValidateDynamicFailure2()
+        {
+            var container = new DiContainer();
+
+            container.Bind<Foo>().ToSingle();
+
+            TestAssert.That(!container.ValidateObjectGraph<Foo>(typeof(Bar), typeof(string)).IsEmpty());
         }
 
         interface IFoo

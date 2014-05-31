@@ -16,12 +16,12 @@ namespace ModestTree.Zenject.Test
         {
             _container = new DiContainer();
 
-            Install(_container);
+            RegisterBindings(_container);
 
             FieldsInjecter.Inject(_container, this);
         }
 
-        protected virtual void Install(DiContainer container)
+        protected virtual void RegisterBindings(DiContainer container)
         {
         }
 

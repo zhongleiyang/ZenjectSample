@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
 using TestAssert=NUnit.Framework.Assert;
+using System.Linq;
 
 namespace ModestTree.Zenject.Test
 {
@@ -22,12 +23,11 @@ namespace ModestTree.Zenject.Test
 
                 scope.Bind<Test0>().To(test1);
 
-                _container.ValidateResolve<Test0>();
+                TestAssert.That(_container.ValidateResolve<Test0>().IsEmpty());
                 TestAssert.That(ReferenceEquals(test1, _container.Resolve<Test0>()));
             }
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<Test0>(); });
+            TestAssert.That(_container.ValidateResolve<Test0>().Any());
 
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test0>(); });
@@ -52,22 +52,20 @@ namespace ModestTree.Zenject.Test
                 scope.Bind<Test0>().To(test0Local);
                 scope.Bind<Test1>().ToSingle();
 
-                _container.ValidateResolve<Test0>();
+                TestAssert.That(_container.ValidateResolve<Test0>().IsEmpty());
                 test0 = _container.Resolve<Test0>();
                 TestAssert.AreEqual(test0Local, test0);
 
-                _container.ValidateResolve<Test1>();
+                TestAssert.That(_container.ValidateResolve<Test1>().IsEmpty());
                 test1 = _container.Resolve<Test1>();
             }
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<Test0>(); });
+            TestAssert.That(_container.ValidateResolve<Test0>().Any());
 
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test0>(); });
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<Test1>(); });
+            TestAssert.That(_container.ValidateResolve<Test1>().Any());
 
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test1>(); });
@@ -75,10 +73,10 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().ToSingle();
             _container.Bind<Test1>().ToSingle();
 
-            _container.ValidateResolve<Test0>();
+            TestAssert.That(_container.ValidateResolve<Test0>().IsEmpty());
             TestAssert.That(_container.Resolve<Test0>() != test0);
 
-            _container.ValidateResolve<Test1>();
+            TestAssert.That(_container.ValidateResolve<Test1>().IsEmpty());
             TestAssert.That(_container.Resolve<Test1>() != test1);
         }
     }

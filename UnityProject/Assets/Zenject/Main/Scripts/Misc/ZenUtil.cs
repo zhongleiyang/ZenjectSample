@@ -11,6 +11,11 @@ namespace ModestTree.Zenject
 {
     public class ZenUtil
     {
+        public static void LoadScene(string levelName)
+        {
+            ZenUtil.LoadScene(levelName, null);
+        }
+
         public static void LoadScene(string levelName, Action<DiContainer> extraBindings)
         {
             CompositionRoot.ExtraBindingsLookup = extraBindings;
@@ -24,39 +29,69 @@ namespace ModestTree.Zenject
 
         public static void LoadSceneAdditive(string levelName, Action<DiContainer> extraBindings)
         {
+            LoadSceneAdditive(levelName, extraBindings, null);
+        }
+
+        public static void LoadSceneAdditive(string levelName, Action<DiContainer> extraBindings, Action<DiContainer> installerBindings)
+        {
             CompositionRoot.ExtraBindingsLookup = extraBindings;
+            CompositionRoot.ExtraInstallerBindingsLookup = installerBindings;
+
             Application.LoadLevelAdditive(levelName);
         }
 
-        public static void ValidateSceneInstaller<TInstaller>(params Type[] dynamicObjectGraphs) where TInstaller : MonoBehaviour, ISceneInstaller
+        public static IEnumerable<ZenjectResolveException> ValidateInstaller(ISceneInstaller installer, bool allowNullBindings)
         {
-            var self = GameObject.FindObjectOfType<TInstaller>();
+            return ValidateInstaller(installer, allowNullBindings, null);
+        }
 
+        public static IEnumerable<ZenjectResolveException> ValidateInstaller(ISceneInstaller installer, bool allowNullBindings, CompositionRoot compRoot)
+        {
             var modulesContainer = new DiContainer();
-            self.InstallModules(modulesContainer);
+            installer.InstallModules(modulesContainer);
 
-            var container = new DiContainer();
-            foreach (var module in modulesContainer.ResolveMany<IModule>())
+            foreach (var error in modulesContainer.ValidateResolve<List<Module>>())
             {
-                module.AddBindings(container);
+                yield return error;
             }
 
-            try
-            {
-                container.ValidateResolve<IDependencyRoot>();
+            var allModules = modulesContainer.ResolveMany<Module>();
 
-                foreach (var dynType in dynamicObjectGraphs)
+            var execContainer = new DiContainer();
+            execContainer.AllowNullBindings = allowNullBindings;
+
+            execContainer.Bind<CompositionRoot>().To(compRoot);
+
+            foreach (var module in allModules)
+            {
+                module.Container = execContainer;
+                module.AddBindings();
+            }
+
+            foreach (var error in execContainer.ValidateResolve<IDependencyRoot>())
+            {
+                yield return error;
+            }
+
+            foreach (var module in allModules)
+            {
+                foreach (var error in module.ValidateSubGraphs())
                 {
-                    container.ValidateCanCreateConcrete(dynType);
+                    yield return error;
                 }
             }
-            catch (ZenjectResolveException e)
-            {
-                UnityEngine.Debug.LogError("Validation failed for object graph given by '" + typeof(TInstaller).Name() + "'");
-                throw e;
-            }
 
-            UnityEngine.Debug.Log("Validation succeeded for object graph given by '" + typeof(TInstaller).Name() + "'");
+            if (!UnityUtil.IsNull(compRoot))
+            {
+                // Also make sure we can fill in all the dependencies in the built-in scene
+                foreach (var monoBehaviour in compRoot.GetComponentsInChildren<MonoBehaviour>())
+                {
+                    foreach (var error in execContainer.ValidateObjectGraph(monoBehaviour.GetType()))
+                    {
+                        yield return error;
+                    }
+                }
+            }
         }
     }
 }

@@ -33,7 +33,7 @@ namespace ModestTree.Zenject
         [Test]
         public void TestTickablesAreOptional()
         {
-            _container.ValidateResolve<StandardKernel>();
+            TestAssert.That(_container.ValidateResolve<StandardKernel>().IsEmpty());
             TestAssert.IsNotNull(_container.Resolve<StandardKernel>());
         }
 
@@ -49,14 +49,14 @@ namespace ModestTree.Zenject
             BindTickable<Tickable1>(0);
             BindTickable<Tickable2>(1);
 
-            _container.ValidateResolve<StandardKernel>();
+            TestAssert.That(_container.ValidateResolve<StandardKernel>().IsEmpty());
             var kernel = _container.Resolve<StandardKernel>();
 
-            _container.ValidateResolve<Tickable1>();
+            TestAssert.That(_container.ValidateResolve<Tickable1>().IsEmpty());
             var tick1 = _container.Resolve<Tickable1>();
-            _container.ValidateResolve<Tickable2>();
+            TestAssert.That(_container.ValidateResolve<Tickable2>().IsEmpty());
             var tick2 = _container.Resolve<Tickable2>();
-            _container.ValidateResolve<Tickable3>();
+            TestAssert.That(_container.ValidateResolve<Tickable3>().IsEmpty());
             var tick3 = _container.Resolve<Tickable3>();
 
             int tickCount = 0;

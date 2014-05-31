@@ -16,7 +16,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().To(new Test0());
             _container.Bind<IFoo>().ToSingle<FooDerived>();
 
-            _container.ValidateResolve<IFoo>();
+            TestAssert.That(_container.ValidateResolve<IFoo>().IsEmpty());
             var foo = _container.Resolve<IFoo>();
 
             TestAssert.That(foo.DidPostInjectBase);

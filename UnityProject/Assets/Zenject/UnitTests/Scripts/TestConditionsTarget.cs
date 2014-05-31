@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ModestTree.Zenject;
 using NUnit.Framework;
 using TestAssert=NUnit.Framework.Assert;
+using System.Linq;
 
 namespace ModestTree.Zenject.Test
 {
@@ -41,15 +42,14 @@ namespace ModestTree.Zenject.Test
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test1>(); });
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<Test1>(); });
+            TestAssert.That(_container.ValidateResolve<Test1>().Any());
         }
 
         [Test]
         public void TestTargetConditionSuccess()
         {
             _container.Bind<Test2>().ToSingle();
-            _container.ValidateResolve<Test2>();
+            TestAssert.That(_container.ValidateResolve<Test2>().IsEmpty());
             var test2 = _container.Resolve<Test2>();
 
             TestAssert.That(test2 != null);

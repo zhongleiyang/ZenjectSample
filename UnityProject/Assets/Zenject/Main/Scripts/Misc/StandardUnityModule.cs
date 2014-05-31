@@ -3,22 +3,22 @@ using System.Linq;
 
 namespace ModestTree.Zenject
 {
-    public class StandardUnityModule : IModule
+    public class StandardUnityModule : Module
     {
         // Install basic functionality for most unity apps
-        public void AddBindings(DiContainer container)
+        public override void AddBindings()
         {
-            container.Bind<UnityKernel>().ToSingleGameObject();
+            _container.Bind<UnityKernel>().ToSingleGameObject();
 
-            container.Bind<UnityEventManager>().ToSingleGameObject();
-            container.Bind<GameObjectInstantiator>().ToSingle();
+            _container.Bind<UnityEventManager>().ToSingleGameObject();
+            _container.Bind<GameObjectInstantiator>().ToSingle();
 
-            container.Bind<StandardKernel>().ToSingle();
+            _container.Bind<StandardKernel>().ToSingle();
             // Uncomment this once you remove dependency in PlayerSandboxWrapper
-            //container.Bind<StandardKernel>().ToTransient().WhenInjectedInto<UnityKernel>();
+            //_container.Bind<StandardKernel>().ToTransient().WhenInjectedInto<UnityKernel>();
 
-            container.Bind<InitializableHandler>().ToSingle();
-            container.Bind<ITickable>().ToLookup<UnityEventManager>();
+            _container.Bind<InitializableHandler>().ToSingle();
+            _container.Bind<ITickable>().ToLookup<UnityEventManager>();
         }
     }
 }

@@ -18,7 +18,7 @@ namespace ModestTree.Zenject.Test
         {
             _container.Bind<Test1>().ToTransient();
 
-            _container.ValidateResolve<Test1>();
+            TestAssert.That(_container.ValidateResolve<Test1>().IsEmpty());
 
             var test1 = _container.Resolve<Test1>();
             var test2 = _container.Resolve<Test1>();

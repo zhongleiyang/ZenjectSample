@@ -37,16 +37,6 @@ namespace ModestTree
             }
         }
 
-        public static IEnumerable<T> Append<T>(this IEnumerable<T> first, T item)
-        {
-            foreach (T t in first)
-            {
-                yield return t;
-            }
-
-            yield return item;
-        }
-
         public static IEnumerable<T> Prepend<T>(this IEnumerable<T> first, IEnumerable<T> second)
         {
             foreach (T t in second)
@@ -55,19 +45,6 @@ namespace ModestTree
             }
 
             foreach (T t in first)
-            {
-                yield return t;
-            }
-        }
-
-        public static IEnumerable<T> Append<T>(this IEnumerable<T> first, IEnumerable<T> second)
-        {
-            foreach (T t in first)
-            {
-                yield return t;
-            }
-
-            foreach (T t in second)
             {
                 yield return t;
             }

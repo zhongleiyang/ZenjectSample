@@ -37,7 +37,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().ToSingle();
             _container.Bind<Test2>().ToSingle();
 
-            _container.ValidateResolve<Test2>();
+            TestAssert.That(_container.ValidateResolve<Test2>().IsEmpty());
             var test1 = _container.Resolve<Test2>();
 
             TestAssert.That(test1.GetVal() != null);

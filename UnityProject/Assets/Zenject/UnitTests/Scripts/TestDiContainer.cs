@@ -13,7 +13,7 @@ namespace ModestTree.Zenject.Test
         DiContainer _container;
 
         [SetUp]
-        void SetUp()
+        public void Setup()
         {
             _container = new DiContainer();
         }
@@ -34,25 +34,28 @@ namespace ModestTree.Zenject.Test
         void AssertHasConcreteTypes(IEnumerable<Type> expectedValues)
         {
             var concreteList = _container.AllConcreteTypes.ToList();
-
-            var standardTypes = new List<Type>() { typeof(Instantiator), typeof(DiContainer) };
+            var expectedList = GetStandardTypeInclusions().Concat(expectedValues).ToList();
 
             TestAssert.That(
                 TestUtil.ListsContainSameElements(
-                    concreteList, standardTypes.Append(expectedValues).ToList()),
-                    "Unexpected list: " + TestUtil.PrintList(concreteList));
+                    concreteList, expectedList),
+                    "Unexpected list: " + TestUtil.PrintList(concreteList) + "\nExpected: " + TestUtil.PrintList(expectedList));
         }
 
         void AssertHasContracts(IEnumerable<Type> expectedValues)
         {
             var contractList = _container.AllContracts.ToList();
-
-            var standardTypes = new List<Type>() { typeof(Instantiator), typeof(DiContainer) };
+            var expectedList = GetStandardTypeInclusions().Concat(expectedValues).ToList();
 
             TestAssert.That(
                 TestUtil.ListsContainSameElements(
-                    contractList, standardTypes.Append(expectedValues).ToList()),
-                    "Unexpected list: " + TestUtil.PrintList(contractList));
+                    contractList, expectedList),
+                    "Unexpected list: " + TestUtil.PrintList(contractList) + "\nExpected: " + TestUtil.PrintList(expectedList));
+        }
+
+        List<Type> GetStandardTypeInclusions()
+        {
+            return new List<Type>() { typeof(Instantiator), typeof(DiContainer) };
         }
 
         [Test]
@@ -68,7 +71,7 @@ namespace ModestTree.Zenject.Test
                 new List<Type>() { typeof(Bar), typeof(IFoo) });
 
             AssertHasConcreteTypes(
-                new List<Type>() { typeof(Bar), typeof(Foo) });
+                new List<Type>() { typeof(Bar), typeof(Foo2), typeof(Foo) });
         }
 
         interface IFoo

@@ -14,7 +14,7 @@ namespace ModestTree.Zenject.Test
             var container = new DiContainer();
             container.Bind<IFoo>().ToMock();
 
-            container.ValidateResolve<IFoo>();
+            TestAssert.That(container.ValidateResolve<IFoo>().IsEmpty());
             var foo = container.Resolve<IFoo>();
 
             TestAssert.AreEqual(foo.GetBar(), 0);

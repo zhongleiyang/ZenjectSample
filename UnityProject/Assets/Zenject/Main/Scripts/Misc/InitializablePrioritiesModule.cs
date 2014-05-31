@@ -5,8 +5,7 @@ using Fasterflect;
 
 namespace ModestTree.Zenject
 {
-    [Serializable]
-    public class InitializablePrioritiesModule : IModule
+    public class InitializablePrioritiesModule : Module
     {
         List<Type> _initializables;
 
@@ -15,7 +14,7 @@ namespace ModestTree.Zenject
             _initializables = initializables;
         }
 
-        public void AddBindings(DiContainer container)
+        public override void AddBindings()
         {
             int priorityCount = 1;
 
@@ -24,7 +23,7 @@ namespace ModestTree.Zenject
                 Assert.That(initializableType.DerivesFrom<IInitializable>(),
                     "Expected type '{0}' to derive from IInitializable", initializableType.Name());
 
-                container.Bind<Tuple<Type, int>>().To(
+                _container.Bind<Tuple<Type, int>>().To(
                     Tuple.New(initializableType, priorityCount)).WhenInjectedInto<InitializableHandler>();
                 priorityCount++;
             }

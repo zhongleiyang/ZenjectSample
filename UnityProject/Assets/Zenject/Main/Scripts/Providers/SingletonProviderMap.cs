@@ -150,6 +150,11 @@ namespace ModestTree.Zenject
                 _creator.DecRefCount();
             }
 
+            public override bool HasInstance()
+            {
+                return _creator.HasCreatedInstance();
+            }
+
             public override Type GetInstanceType()
             {
                 return _creator.GetInstanceType();
@@ -160,9 +165,15 @@ namespace ModestTree.Zenject
                 return _creator.GetInstance();
             }
 
-            public override void ValidateBinding()
+            public override IEnumerable<ZenjectResolveException> ValidateBinding()
             {
-                BindingValidator.ValidateCanCreateConcrete(_container, GetInstanceType());
+                if (_creator.HasCreatedInstance())
+                {
+                    // This would be the case if given an instance at binding time with ToSingle(instance)
+                    return Enumerable.Empty<ZenjectResolveException>();
+                }
+
+                return BindingValidator.ValidateObjectGraph(_container, GetInstanceType());
             }
         }
     }

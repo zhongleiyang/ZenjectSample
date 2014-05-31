@@ -50,7 +50,7 @@ namespace ModestTree.Zenject.Test
         {
             _container.Bind<Test2>().ToSingle();
 
-            _container.ValidateResolve<Test2>();
+            TestAssert.That(_container.ValidateResolve<Test2>().IsEmpty());
             var result = _container.ResolveMany<Test2>();
 
             TestAssert.That(result != null);

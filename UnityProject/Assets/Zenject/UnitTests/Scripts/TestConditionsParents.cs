@@ -67,8 +67,7 @@ namespace ModestTree.Zenject.Test
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<Test1>(); });
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<Test1>(); });
+            TestAssert.That(_container.ValidateResolve<Test0>().Any());
         }
 
         [Test]
@@ -77,7 +76,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test1>().ToSingle();
             _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Contains(typeof(Test1)));
 
-            _container.ValidateResolve<Test1>();
+            TestAssert.That(_container.ValidateResolve<Test1>().IsEmpty());
             var test1 = _container.Resolve<Test1>();
             TestAssert.That(test1 != null);
         }
@@ -96,10 +95,10 @@ namespace ModestTree.Zenject.Test
             _container.Bind<Test0>().To(t0a).When(c => c.ParentTypes.Contains(typeof(Test3)));
             _container.Bind<Test0>().To(t0b).When(c => c.ParentTypes.Contains(typeof(Test4)));
 
-            _container.ValidateResolve<Test3>();
+            TestAssert.That(_container.ValidateResolve<Test3>().IsEmpty());
             var test3 = _container.Resolve<Test3>();
 
-            _container.ValidateResolve<Test4>();
+            TestAssert.That(_container.ValidateResolve<Test4>().IsEmpty());
             var test4 = _container.Resolve<Test4>();
 
             TestAssert.That(ReferenceEquals(test3.test1.test0, t0a));
@@ -115,8 +114,7 @@ namespace ModestTree.Zenject.Test
             TestAssert.Throws<ZenjectResolveException>(
                 delegate { _container.Resolve<ITest1>(); });
 
-            TestAssert.Throws<ZenjectResolveException>(
-                delegate { _container.ValidateResolve<ITest1>(); });
+            TestAssert.That(_container.ValidateResolve<Test1>().Any());
         }
 
         [Test]
@@ -125,7 +123,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<ITest1>().ToSingle<Test2>();
             _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Contains(typeof(Test2)));
 
-            _container.ValidateResolve<ITest1>();
+            TestAssert.That(_container.ValidateResolve<ITest1>().IsEmpty());
             var test1 = _container.Resolve<ITest1>();
             TestAssert.That(test1 != null);
         }
@@ -136,7 +134,7 @@ namespace ModestTree.Zenject.Test
             _container.Bind<ITest1>().ToSingle<Test2>();
             _container.Bind<Test0>().ToSingle().When(c => c.ParentTypes.Where(x => typeof(ITest1).IsAssignableFrom(x)).Any());
 
-            _container.ValidateResolve<ITest1>();
+            TestAssert.That(_container.ValidateResolve<ITest1>().IsEmpty());
             var test1 = _container.Resolve<ITest1>();
             TestAssert.That(test1 != null);
         }
