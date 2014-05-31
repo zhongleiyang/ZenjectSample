@@ -25,6 +25,7 @@
     * Advanced Features
         * <a href="#update_order">Update Order And Initialization Order</a>
         * <a href="#across_scenes">Injecting Data Across Scenes</a>
+        * <a href="#settings">Using the Unity Inspector To Configure Settings</a>
         * <a href="#graph_validation">Object Graph Validation</a>
         * <a href="#dynamic_creation">Creating Objects Dynamically</a>
         * <a href="#bindscope">Using BindScope</a>
@@ -596,9 +597,46 @@ Note that in this case I didn't need to use the "LevelName" identifier since the
 
 ## <a id="settings"></a>Using the Unity Inspector To Configure Settings
 
-One implication of preferring to write your code as normal C# classes instead of MonoBehaviour's is that you lose the ability to configure data on them using the inspector.  You can however still take advantage of this using Zenject by using the following pattern:
+One implication of writing most of your code as normal C# classes instead of MonoBehaviour's is that you lose the ability to configure data on them using the inspector.  You can however still take advantage of this in Zenject by using the following pattern, as seen in the sample project:
 
-TBD
+    public class AsteroidsSceneInstaller : MonoBehaviour, ISceneInstaller
+    {
+        public AsteroidsMainModule.Settings AsteroidSettings;
+
+        public void InstallModules(DiContainer container)
+        {
+            ...
+            container.Bind<AsteroidsMainModule.Settings>().To(AsteroidSettings);
+            ...
+        }
+    }
+
+Then in your module:
+
+    public class AsteroidsMainModule : Module
+    {
+        [Inject]
+        readonly Settings _settings;
+
+        public override void AddBindings()
+        {
+            ...
+            _container.Bind<ShipStateMoving.Settings>().ToSingle(_settings.StateMoving);
+            ...
+        }
+
+        [Serializable]
+        public class Settings
+        {
+            ...
+            public ShipStateMoving.Settings StateMoving;
+            ...
+        }
+    }
+
+Note that if you follow this method, you will have to make sure to always include the [Serializable] attribute on your settings wrappers, otherwise they won't show up in the Unity inspector.
+
+You can see this in action, start the asteroids scene and try adjusting `Ship -> State Moving -> Move Speed` setting and watch live as your ship changes speed.
 
 ## <a id="graph_validation"></a>Object Graph Validation
 

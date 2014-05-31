@@ -10,7 +10,7 @@ namespace ModestTree.Asteroids
 {
     public class AsteroidsSceneInstaller : MonoBehaviour, ISceneInstaller
     {
-        public AsteroidsSettings Settings;
+        public AsteroidsMainModule.Settings AsteroidSettings;
 
         public void InstallModules(DiContainer container)
         {
@@ -21,7 +21,7 @@ namespace ModestTree.Asteroids
             // but in larger projects you will likely end up with many different re-usable modules
             // that you'll want to use in several different installers
             container.Bind<Module>().ToSingle<AsteroidsMainModule>();
-            container.Bind<AsteroidsMainModule.Settings>().To(Settings.Main);
+            container.Bind<AsteroidsMainModule.Settings>().To(AsteroidSettings);
 
             InitPriorities(container);
         }

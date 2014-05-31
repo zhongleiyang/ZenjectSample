@@ -15,12 +15,8 @@ namespace ModestTree.Asteroids
     // The main installer for Asteroids
     public class AsteroidsMainModule : Module
     {
+        [Inject]
         readonly Settings _settings;
-
-        public AsteroidsMainModule(Settings settings)
-        {
-            _settings = settings;
-        }
 
         public override void AddBindings()
         {
