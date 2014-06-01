@@ -12,27 +12,27 @@
     * <a href="#misconceptions">Misconceptions</a>
 * Zenject API
     * <a href="#overview-of-the-zenject-api">Overview of the Zenject API</a>
-        * <a href="#hello_world">Hellow World Example</a>
-        * <a href="#bindings">Binding</a>
-        * <a href="#optional_bindings">Optional Binding</a>
-        * <a href="#conditional_bindings">Conditional Bindings</a>
-        * <a href="#dependency_root">The Dependency Root</a>
-        * <a href="#tickables">ITickable</a>
-        * <a href="#postinject">IInitializable and PostInject</a>
-        * <a href="#composition_root">Composition Root, Installers, And Modules</a>
-    * <a href="#operation_order">Zenject Order Of Operations</a>
-    * <a href="#rules">Rules / Guidelines / Recommendations</a>
+        * <a href="#hello-world-example">Hello World Example</a>
+        * <a href="#binding">Binding</a>
+        * <a href="#optional-binding">Optional Binding</a>
+        * <a href="#conditional-bindings">Conditional Bindings</a>
+        * <a href="#the-dependency-root">The Dependency Root</a>
+        * <a href="#itickable">ITickable</a>
+        * <a href="#iinitializable-and-postinject">IInitializable and PostInject</a>
+        * <a href="#composition-root--installer--modules">Composition Root, Installers, And Modules</a>
+    * <a href="#zenject-order-of-operations">Zenject Order Of Operations</a>
+    * <a href="#di-rules--guidelines--recommendations">Rules / Guidelines / Recommendations</a>
     * Advanced Features
-        * <a href="#update_order">Update Order And Initialization Order</a>
-        * <a href="#across_scenes">Injecting Data Across Scenes</a>
-        * <a href="#settings">Using the Unity Inspector To Configure Settings</a>
-        * <a href="#graph_validation">Object Graph Validation</a>
-        * <a href="#dynamic_creation">Creating Objects Dynamically</a>
-        * <a href="#bindscope">Using BindScope</a>
-        * <a href="#disposables">Implementing IDisposable</a>
-        * <a href="#automocking">Auto-Mocking Using Moq</a>
-        * <a href="#graphviz">Visualizing Object Graph Automatically</a>
-    * <a href="#help">Further Help</a>
+        * <a href="#update--initialization-order">Update Order And Initialization Order</a>
+        * <a href="#injecting-data-across-scenes">Injecting Data Across Scenes</a>
+        * <a href="#using-the-unity-inspector-to-configure-settings">Using the Unity Inspector To Configure Settings</a>
+        * <a href="#object-graph-validation">Object Graph Validation</a>
+        * <a href="#dynamic-object-graph-validation">Creating Objects Dynamically</a>
+        * <a href="#using-bindscope">Using BindScope</a>
+        * <a href="#implementing-idisposable">Implementing IDisposable</a>
+        * <a href="#auto-mocking-using-moq">Auto-Mocking Using Moq</a>
+        * <a href="#visualizing-object-graphs-automatically">Visualizing Object Graph Automatically</a>
+    * <a href="#further-help">Further Help</a>
     * <a href="#license">License</a>
 
 ## <a id="introduction"></a>Introduction
@@ -164,7 +164,7 @@ Other benefits include:
 
 What follows is a general overview of how DI patterns are applied using Zenject.  However, the best documentation right now is probably the included sample project itself (a kind of asteroids clone, which you can find by opening "Extras/SampleGame/Asteroids.unity").  I would recommend using that for reference after reading over these concepts.
 
-## <a id="hello_world"></a>Hello World Example
+## <a id="hello-world-example"></a>Hello World Example
 
     public class TestInstaller : MonoBehaviour, ISceneInstaller
     {
