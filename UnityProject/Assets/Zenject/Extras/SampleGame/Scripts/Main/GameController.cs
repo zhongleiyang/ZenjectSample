@@ -39,6 +39,7 @@ namespace ModestTree.Asteroids
 
         public void Initialize()
         {
+            Physics.gravity = Vector3.zero;
             Screen.showCursor = false;
             GameEvent.ShipCrashed += OnShipCrashed;
 
