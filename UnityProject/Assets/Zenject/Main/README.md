@@ -11,7 +11,7 @@
     * <a href="#theory">Theory</a>
     * <a href="#misconceptions">Misconceptions</a>
 * Zenject API
-    * <a href="#zenject_overview">Overview of the Zenject API</a>
+    * <a href="#overview-of-the-zenject-api">Overview of the Zenject API</a>
         * <a href="#hello_world">Hellow World Example</a>
         * <a href="#bindings">Binding</a>
         * <a href="#optional_bindings">Optional Binding</a>
@@ -160,7 +160,7 @@ Other benefits include:
 * Refactorability - When code is loosely coupled, as is the case when using DI properly, the entire code base is much more resilient to changes.  You can completely change parts of the code base without having those changes wreak havoc on other parts.
 * Encourages modular code - When using a DI framework you will naturally follow better design practices, because it forces you to think about the interfaces between classes.
 
-## <a id="zenject_overview"></a>Overview Of The Zenject API
+## <a id="zenjectoverview"></a>Overview Of The Zenject API
 
 What follows is a general overview of how DI patterns are applied using Zenject.  However, the best documentation right now is probably the included sample project itself (a kind of asteroids clone, which you can find by opening "Extras/SampleGame/Asteroids.unity").  I would recommend using that for reference after reading over these concepts.
 
