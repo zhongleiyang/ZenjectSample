@@ -156,7 +156,7 @@ More important than that is the fact that using a dependency injection framework
 
 Other benefits include:
 
-* Testability - Writing automated unit tests or user-driven tests becomes very easy, because it is just a matter of writing a different 'composition root' which wires up the dependencies in a different way.  Want to only test one subsystem?  Simply create a new composition root.   In cases where you can't easily separate out a specific sub-system to test, you can also creates 'mocks' for the sub-systems that you don't care about. (more detail <a href="#automocking">below</a>)
+* Testability - Writing automated unit tests or user-driven tests becomes very easy, because it is just a matter of writing a different 'composition root' which wires up the dependencies in a different way.  Want to only test one subsystem?  Simply create a new composition root.   In cases where you can't easily separate out a specific sub-system to test, you can also creates 'mocks' for the sub-systems that you don't care about. (more detail <a href="#auto-mocking-using-moq">below</a>)
 * Refactorability - When code is loosely coupled, as is the case when using DI properly, the entire code base is much more resilient to changes.  You can completely change parts of the code base without having those changes wreak havoc on other parts.
 * Encourages modular code - When using a DI framework you will naturally follow better design practices, because it forces you to think about the interfaces between classes.
 
@@ -283,7 +283,7 @@ Inject many.  You can also bind multiple types to the same interface, with the r
         }
     }
 
-Note that when defining List dependencies, the empty list will result in an error.  If the empty list is valid, then you can suppress the error by marking the List as optional as described <a href="#optional_bindings">here</a>.
+Note that when defining List dependencies, the empty list will result in an error.  If the empty list is valid, then you can suppress the error by marking the List as optional as described <a href="#optional-binding">here</a>.
 
 ## <a id="optional-binding"></a>Optional Binding
 
@@ -396,15 +396,15 @@ Then it's just a matter of including the following in one of your installers (as
 
     _container.Bind<ITickable>().ToSingle<Ship>();
 
-Note that the order that Tick() is called on all ITickables is also configurable, as outlined <a href="#update_order">here</a>.
+Note that the order that Tick() is called on all ITickables is also configurable, as outlined <a href="#update--initialization-order">here</a>.
 
 ## <a id="iinitializable-and-postinject"></a>IInitializable and PostInject
 
 If you have some initialization that needs to occur on a given object, you can include this code in the constructor.  However, this means that the initialization logic would occur in the middle of the object graph being constructed, so it may not be ideal.
 
-One alternative is implement IInitializable, and then perform initialization logic in an Initialize() method.  This method would be called immediately after the entire object graph is constructed.  The order that the Initialize() methods are called on all IInitialize's is also controllable in a similar way to ITickable, as explained <a href="#update_order">here</a>.
+One alternative is implement IInitializable, and then perform initialization logic in an Initialize() method.  This method would be called immediately after the entire object graph is constructed.  The order that the Initialize() methods are called on all IInitialize's is also controllable in a similar way to ITickable, as explained <a href="#update--initialization-order">here</a>.
 
-IInitializable works well for start-up initialization, but what about for objects that are created dynamically via factories?  (see <a href="#dynamic_creation">this section</a> for what I'm referring to here).
+IInitializable works well for start-up initialization, but what about for objects that are created dynamically via factories?  (see <a href="#dynamic-object-graph-validation">this section</a> for what I'm referring to here).
 
 In these cases you can mark any methods that you want to be called after injection occurs with a [PostInject] attribute:
 
@@ -454,11 +454,11 @@ A Zenject driven application is executed by the following steps:
 * Unity Start() is called on all built-in MonoBehaviours
 * Unity Update() is called, which results in Tick() being called for all ITickable objects (in the order specified in the installers)
 * App is exited
-* Dispose() is called on all objects mapped to IDisposable (see <a href="#disposables">here</a> for details)
+* Dispose() is called on all objects mapped to IDisposable (see <a href="#implementing-idisposable">here</a> for details)
 
 ## <a id="di-rules--guidelines--recommendations"></a>DI Rules / Guidelines / Recommendations
 
-* The container should *only* be referenced in the composition root layer.  Note that factories are part of this layer and the container can be referenced there (which is necessary to create objects at runtime).  For example, see ShipStateFactory in the sample project.  See <a href="#dynamic_creation">here</a> for more details on this.
+* The container should *only* be referenced in the composition root layer.  Note that factories are part of this layer and the container can be referenced there (which is necessary to create objects at runtime).  For example, see ShipStateFactory in the sample project.  See <a href="#dynamic-object-graph-validation">here</a> for more details on this.
 * Prefer constructor injection to field or property injection.
     * Constructor injection forces the dependency to only be resolved once, at class creation, which is usually what you want.  In many cases you don't want to expose a public property with your internal dependencies
     * Constructor injection guarantees no circular dependencies between classes, which is generally a bad thing to do
