@@ -125,7 +125,8 @@ namespace ModestTree.Zenject
             {
                 if (extraType.DerivesFromOrEqual(contractType))
                 {
-                    extrasList.RemoveWithConfirm(extraType);
+                    var removed = extrasList.Remove(extraType);
+                    Assert.That(removed);
                     return true;
                 }
             }

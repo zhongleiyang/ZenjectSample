@@ -77,9 +77,18 @@ namespace ModestTree.Zenject
         {
             var valueObj = container.Resolve(injectInfo, targetInstance);
 
-            Assert.IsNotNull(injectInfo.Setter);
-
-            injectInfo.Setter(targetInstance, valueObj);
+            if (valueObj == null)
+            {
+                // Do not change if optional
+                // Since it may have some hard coded value
+                Assert.That(injectInfo.Optional); // Should have thrown resolve exception otherwise
+            }
+            else
+            {
+                Assert.IsNotNull(injectInfo.Setter);
+                injectInfo.Setter(targetInstance, valueObj);
+            }
         }
     }
 }
+

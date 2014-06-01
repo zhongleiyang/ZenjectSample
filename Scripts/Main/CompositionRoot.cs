@@ -73,11 +73,11 @@ namespace ModestTree.Zenject
 
             if (modules.IsEmpty())
             {
-                Log.Info("No modules found while initializing CompositionRoot");
+                Debug.Log("No modules found while initializing CompositionRoot");
                 return;
             }
 
-            Log.Info("Initializing Composition Root with " + modules.Count() + " modules");
+            Debug.Log("Initializing Composition Root with " + modules.Count() + " modules");
 
             foreach (var module in modules)
             {
