@@ -12,7 +12,7 @@ namespace ModestTree.Zenject
 {
     public static class ZenjectMenu
     {
-        [MenuItem("Assets/Zenject/Validate Current Scene #%v")]
+        [MenuItem("Edit/Zenject/Validate Current Scene #%v")]
         public static void ValidateCurrentScene()
         {
             var compRoots = GameObject.FindObjectsOfType<CompositionRoot>();
@@ -95,7 +95,7 @@ namespace ModestTree.Zenject
             }
         }
 
-        [MenuItem("Assets/Zenject/Output Object Graph For Current Scene")]
+        [MenuItem("Edit/Zenject/Output Object Graph For Current Scene")]
         public static void OutputObjectGraphForScene()
         {
             if (!EditorApplication.isPlaying)

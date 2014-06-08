@@ -25,7 +25,7 @@ namespace ModestTree.Asteroids
             // Install the main game
             InstallAsteroids();
             InstallSettings();
-            InitPriorities(_container);
+            InitPriorities();
         }
 
         // In this example there is only one 'installer' but in larger projects you
@@ -85,7 +85,7 @@ namespace ModestTree.Asteroids
 
         // We don't need to include these bindings but often its nice to have
         // control over initialization-order and update-order
-        void InitPriorities(DiContainer _container)
+        void InitPriorities()
         {
             _container.Bind<IInstaller>().ToSingle<InitializablePrioritiesInstaller>();
             _container.Bind<List<Type>>().To(Initializables)
