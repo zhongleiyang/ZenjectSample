@@ -15,16 +15,14 @@ namespace ModestTree.Zenject
     // - http://www.graphviz.org/
     public static class ObjectGraphVisualizer
     {
-        public static void OutputObjectGraphToFile(DiContainer container, string outputPath)
-        {
-            OutputObjectGraphToFile(container, outputPath, Enumerable.Empty<Type>());
-        }
-
-        public static void OutputObjectGraphToFile(DiContainer container, string outputPath, IEnumerable<Type> externalIgnoreTypes)
+        public static void OutputObjectGraphToFile(
+            DiContainer container, string outputPath,
+            IEnumerable<Type> externalIgnoreTypes, IEnumerable<Type> contractTypes)
         {
 #if !UNITY_WEBPLAYER
+
             // Output the entire object graph to file
-            var graph = CalculateObjectGraph(container);
+            var graph = CalculateObjectGraph(container, contractTypes);
 
             var ignoreTypes = new List<Type>()
             {
@@ -73,11 +71,12 @@ namespace ModestTree.Zenject
             return ignoreTypes.Contains(type);
         }
 
-        static Dictionary<Type, List<Type>> CalculateObjectGraph(DiContainer container)
+        static Dictionary<Type, List<Type>> CalculateObjectGraph(
+            DiContainer container, IEnumerable<Type> contracts)
         {
             var map = new Dictionary<Type, List<Type>>();
 
-            foreach (var contractType in container.AllContracts)
+            foreach (var contractType in contracts)
             {
                 var depends = GetDependencies(container, contractType);
 

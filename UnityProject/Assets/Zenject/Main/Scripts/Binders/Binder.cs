@@ -3,31 +3,36 @@ using UnityEngine;
 
 namespace ModestTree.Zenject
 {
-    public class Binder<TContract>
+    public class Binder
     {
+        readonly protected Type _contractType;
         readonly protected DiContainer _container;
-        readonly protected SingletonProviderMap _singletonMap;
 
-        public Binder(DiContainer container, SingletonProviderMap singletonMap)
+        public Binder(
+            DiContainer container,
+            Type contractType)
         {
             _container = container;
-            _singletonMap = singletonMap;
+            _contractType = contractType;
+        }
+
+        public virtual BindingConditionSetter ToProvider(ProviderBase provider)
+        {
+            _container.RegisterProvider(provider, _contractType);
+            return new BindingConditionSetter(provider);
+        }
+    }
+
+    public class BinderGeneric<TContract> : Binder
+    {
+        public BinderGeneric(DiContainer container)
+            : base(container, typeof(TContract))
+        {
         }
 
         public BindingConditionSetter ToLookup<TConcrete>() where TConcrete : TContract
         {
             return ToMethod(c => c.Resolve<TConcrete>());
-        }
-
-        public BindingConditionSetter ToFactory<TConcrete>() where TConcrete : IFactory<TContract>
-        {
-            return ToMethod(c => c.Resolve<TConcrete>().Create());
-        }
-
-        public virtual BindingConditionSetter ToProvider(ProviderBase provider)
-        {
-            _container.RegisterProvider<TContract>(provider);
-            return new BindingConditionSetter(provider);
         }
 
         public BindingConditionSetter ToMethod(Func<DiContainer, TContract> method)

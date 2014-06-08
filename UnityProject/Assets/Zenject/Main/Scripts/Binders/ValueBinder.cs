@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace ModestTree.Zenject
 {
-    public class ValueBinder<TContract> : Binder<TContract> where TContract : struct
+    public class ValueBinder<TContract> : BinderGeneric<TContract> where TContract : struct
     {
-        public ValueBinder(DiContainer container, SingletonProviderMap singletonMap)
-            : base(container, singletonMap)
+        public ValueBinder(DiContainer container)
+            : base(container)
         {
         }
 
@@ -21,7 +21,7 @@ namespace ModestTree.Zenject
 
             // Also bind to nullable primitives
             // this is useful so that we can have optional primitive dependencies
-            _container.RegisterProvider<Nullable<TContract>>(provider);
+            _container.RegisterProvider(provider, typeof(Nullable<TContract>));
 
             return conditionSetter;
         }

@@ -3,37 +3,57 @@ using System.Collections.Generic;
 using System.Linq;
 namespace ModestTree.Zenject
 {
-    public class TransientProvider<T> : ProviderBase
+    public class TransientProvider : ProviderBase
     {
-        readonly IFactory<T> _factory;
+        readonly Type _concreteType;
         readonly DiContainer _container;
 
-        public TransientProvider(DiContainer container)
+        Instantiator _instantiator;
+
+        public TransientProvider(DiContainer container, Type concreteType)
         {
-            _factory = new Factory<T>(container);
             _container = container;
+            _concreteType = concreteType;
         }
 
         public override Type GetInstanceType()
         {
-            return typeof(T);
+            return _concreteType;
         }
 
-        public override bool HasInstance()
+        public override bool HasInstance(Type contractType)
         {
             return false;
         }
 
-        public override object GetInstance()
+        public override object GetInstance(Type contractType)
         {
-            var obj = _factory.Create();
+            if (_instantiator == null)
+            {
+                _instantiator = _container.Resolve<Instantiator>();
+            }
+
+            var obj = _instantiator.Instantiate(GetTypeToInstantiate(contractType));
             Assert.That(obj != null);
             return obj;
         }
 
+        Type GetTypeToInstantiate(Type contractType)
+        {
+            if (_concreteType.IsOpenGenericType())
+            {
+                Assert.That(!contractType.IsAbstract);
+                Assert.That(contractType.GetGenericTypeDefinition() == _concreteType);
+                return contractType;
+            }
+
+            Assert.That(_concreteType.DerivesFromOrEqual(contractType));
+            return _concreteType;
+        }
+
         public override IEnumerable<ZenjectResolveException> ValidateBinding()
         {
-            return BindingValidator.ValidateObjectGraph(_container, typeof(T));
+            return BindingValidator.ValidateObjectGraph(_container, _concreteType);
         }
     }
 }

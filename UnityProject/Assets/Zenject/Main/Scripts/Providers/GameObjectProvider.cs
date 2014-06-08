@@ -23,13 +23,16 @@ namespace ModestTree.Zenject
             return typeof(T);
         }
 
-        public override bool HasInstance()
+        public override bool HasInstance(Type contractType)
         {
+            Assert.That(typeof(T).DerivesFromOrEqual(contractType));
             return _instance != null;
         }
 
-        public override object GetInstance()
+        public override object GetInstance(Type contractType)
         {
+            Assert.That(typeof(T).DerivesFromOrEqual(contractType));
+
             if (_instance == null)
             {
                 if (_instantiator == null)

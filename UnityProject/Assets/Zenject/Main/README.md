@@ -57,6 +57,7 @@ For general support or bug requests, please feel free to create issues on the gi
 * Auto-Mocking using the Moq library
 * Injection across different Unity scenes
 * Ability to print entire object graph as a UML image automatically
+* Ability to validate object graphs at editor time
 
 ## <a id="history"></a>History
 
@@ -168,16 +169,16 @@ What follows is a general overview of how DI patterns are applied using Zenject.
 
     public class TestInstaller : MonoBehaviour, ISceneInstaller
     {
-        public void InstallModules(DiContainer container)
+        public override void InstallBindings()
         {
-            container.Bind<Module>().ToSingle<StandardUnityModule>();
-            container.Bind<Module>().ToSingle<TestModule>();
+            container.Bind<IInstaller>().ToSingle<StandardUnityModule>();
+            container.Bind<IInstaller>().ToSingle<TestModule>();
         }
     }
 
     public class TestModule : Module
     {
-        public override void AddBindings()
+        public override void InstallBindings()
         {
             _container.Bind<IDependencyRoot>().ToSingle<DependencyRootStandard>();
 
@@ -477,11 +478,11 @@ In Zenject, by default, ITickables and IInitializables are updated in the order 
 
         void InitPriorities(DiContainer container)
         {
-            container.Bind<Module>().ToSingle<InitializablePrioritiesModule>();
+            container.Bind<IInstaller>().ToSingle<InitializablePrioritiesModule>();
             container.Bind<List<Type>>().To(Initializables)
                 .WhenInjectedInto<InitializablePrioritiesModule>();
 
-            container.Bind<Module>().ToSingle<TickablePrioritiesModule>();
+            container.Bind<IInstaller>().ToSingle<TickablePrioritiesModule>();
             container.Bind<List<Type>>().To(Tickables)
                 .WhenInjectedInto<TickablePrioritiesModule>();
         }
@@ -576,7 +577,7 @@ Then, in the module for our scene we can include the following:
 
         ...
 
-        public override void AddBindings()
+        public override void InstallBindings()
         {
             ...
             _container.Bind<string>().To(LevelName).WhenInjectedInto<LevelHandler>();
@@ -601,12 +602,12 @@ One implication of writing most of your code as normal C# classes instead of Mon
 
     public class AsteroidsSceneInstaller : MonoBehaviour, ISceneInstaller
     {
-        public AsteroidsMainModule.Settings AsteroidSettings;
+        public AsteroidsMainInstaller.Settings AsteroidSettings;
 
-        public void InstallModules(DiContainer container)
+        public override void InstallBindings()
         {
             ...
-            container.Bind<AsteroidsMainModule.Settings>().To(AsteroidSettings);
+            container.Bind<AsteroidsMainInstaller.Settings>().To(AsteroidSettings);
             ...
         }
     }
@@ -618,7 +619,7 @@ Then in your module:
         [Inject]
         readonly Settings _settings;
 
-        public override void AddBindings()
+        public override void InstallBindings()
         {
             ...
             _container.Bind<ShipStateMoving.Settings>().ToSingle(_settings.StateMoving);

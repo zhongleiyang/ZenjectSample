@@ -16,19 +16,10 @@ namespace ModestTree.Zenject
             ZenUtil.LoadScene(levelName, null);
         }
 
-        public static void LoadScene(string levelName, Action<DiContainer> extraBindings)
-        {
-            CompositionRoot.ExtraBindingsLookup = extraBindings;
-            Application.LoadLevel(levelName);
-        }
-
         public static void LoadScene(
-            string levelName,
-            Action<DiContainer> extraBindings,
-            Action<DiContainer> installerBindings)
+            string levelName, Action<DiContainer> extraBindings)
         {
             CompositionRoot.ExtraBindingsLookup = extraBindings;
-            CompositionRoot.ExtraInstallerBindingsLookup = installerBindings;
             Application.LoadLevel(levelName);
         }
 
@@ -37,69 +28,49 @@ namespace ModestTree.Zenject
             LoadSceneAdditive(levelName, null);
         }
 
-        public static void LoadSceneAdditive(string levelName, Action<DiContainer> extraBindings)
-        {
-            LoadSceneAdditive(levelName, extraBindings, null);
-        }
-
-        public static void LoadSceneAdditive(string levelName, Action<DiContainer> extraBindings, Action<DiContainer> installerBindings)
+        public static void LoadSceneAdditive(
+            string levelName, Action<DiContainer> extraBindings)
         {
             CompositionRoot.ExtraBindingsLookup = extraBindings;
-            CompositionRoot.ExtraInstallerBindingsLookup = installerBindings;
-
             Application.LoadLevelAdditive(levelName);
         }
 
-        public static IEnumerable<ZenjectResolveException> ValidateInstaller(ISceneInstaller installer, bool allowNullBindings)
+        public static List<IInstaller> InstallInstallers(DiContainer container)
         {
-            return ValidateInstaller(installer, allowNullBindings, null);
+            var uninstalled = container.ResolveMany<IInstaller>();
+
+            var allInstallers = new List<IInstaller>();
+
+            while (!uninstalled.IsEmpty())
+            {
+                container.ReleaseBindings<IInstaller>();
+
+                foreach (var installer in uninstalled)
+                {
+                    installer.InstallBindings();
+                    allInstallers.Add(installer);
+                }
+
+                uninstalled = container.ResolveMany<IInstaller>();
+            }
+
+            return allInstallers;
         }
 
-        public static IEnumerable<ZenjectResolveException> ValidateInstaller(ISceneInstaller installer, bool allowNullBindings, CompositionRoot compRoot)
+        public static IEnumerable<ZenjectResolveException> ValidateInstallers(DiContainer container)
         {
-            var modulesContainer = new DiContainer();
-            installer.InstallModules(modulesContainer);
+            var allInstallers = InstallInstallers(container);
 
-            foreach (var error in modulesContainer.ValidateResolve<List<Module>>())
+            foreach (var error in container.ValidateResolve<IDependencyRoot>())
             {
                 yield return error;
             }
 
-            var allModules = modulesContainer.ResolveMany<Module>();
-
-            var execContainer = new DiContainer();
-            execContainer.AllowNullBindings = allowNullBindings;
-
-            execContainer.Bind<CompositionRoot>().To(compRoot);
-
-            foreach (var module in allModules)
+            foreach (var installer in allInstallers)
             {
-                module.Container = execContainer;
-                module.AddBindings();
-            }
-
-            foreach (var error in execContainer.ValidateResolve<IDependencyRoot>())
-            {
-                yield return error;
-            }
-
-            foreach (var module in allModules)
-            {
-                foreach (var error in module.ValidateSubGraphs())
+                foreach (var error in installer.ValidateSubGraphs())
                 {
                     yield return error;
-                }
-            }
-
-            if (!UnityUtil.IsNull(compRoot))
-            {
-                // Also make sure we can fill in all the dependencies in the built-in scene
-                foreach (var monoBehaviour in compRoot.GetComponentsInChildren<MonoBehaviour>())
-                {
-                    foreach (var error in execContainer.ValidateObjectGraph(monoBehaviour.GetType()))
-                    {
-                        yield return error;
-                    }
                 }
             }
         }

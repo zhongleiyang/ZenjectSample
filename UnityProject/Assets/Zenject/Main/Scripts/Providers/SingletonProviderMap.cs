@@ -52,7 +52,7 @@ namespace ModestTree.Zenject
             {
                 if (creator.HasCreatedInstance())
                 {
-                    throw new ZenjectBindException("Found multiple singleton instances bound to the type '{0}'", concreteType.Name());
+                    throw new ZenjectBindException("Found multiple singleton instances bound to the type '{0}'".With(concreteType.Name()));
                 }
 
                 creator.SetInstance(instance);
@@ -113,7 +113,7 @@ namespace ModestTree.Zenject
                 return _instanceType;
             }
 
-            public object GetInstance()
+            public object GetInstance(Type contractType)
             {
                 if (_instance == null)
                 {
@@ -122,11 +122,24 @@ namespace ModestTree.Zenject
                         _instantiator = _container.Resolve<Instantiator>();
                     }
 
-                    _instance = _instantiator.Instantiate(_instanceType);
+                    _instance = _instantiator.Instantiate(GetTypeToInstantiate(contractType));
                     Assert.That(_instance != null);
                 }
 
                 return _instance;
+            }
+
+            Type GetTypeToInstantiate(Type contractType)
+            {
+                if (_instanceType.IsOpenGenericType())
+                {
+                    Assert.That(!contractType.IsAbstract);
+                    Assert.That(contractType.GetGenericTypeDefinition() == _instanceType);
+                    return contractType;
+                }
+
+                Assert.That(_instanceType.DerivesFromOrEqual(contractType));
+                return _instanceType;
             }
         }
 
@@ -150,7 +163,7 @@ namespace ModestTree.Zenject
                 _creator.DecRefCount();
             }
 
-            public override bool HasInstance()
+            public override bool HasInstance(Type contractType)
             {
                 return _creator.HasCreatedInstance();
             }
@@ -160,9 +173,9 @@ namespace ModestTree.Zenject
                 return _creator.GetInstanceType();
             }
 
-            public override object GetInstance()
+            public override object GetInstance(Type contractType)
             {
-                return _creator.GetInstance();
+                return _creator.GetInstance(contractType);
             }
 
             public override IEnumerable<ZenjectResolveException> ValidateBinding()
