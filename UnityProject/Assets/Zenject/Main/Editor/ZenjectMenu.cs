@@ -84,7 +84,7 @@ namespace ModestTree.Zenject
                 if (monoBehaviour == null)
                 {
                     // Be nice to give more information here
-                    Log.Warn("Found null MonoBehaviour in scene");
+                    Debug.LogWarning("Found null MonoBehaviour in scene");
                     continue;
                 }
 
@@ -111,7 +111,7 @@ namespace ModestTree.Zenject
             }
             catch (ZenjectException e)
             {
-                Debug.LogError("Unable to find container in current scene. " + e.GetFullMessage());
+                Debug.LogError("Unable to find container in current scene. " + e.Message);
                 return;
             }
 
