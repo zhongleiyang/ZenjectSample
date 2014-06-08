@@ -94,7 +94,7 @@ namespace ModestTree.Zenject
                 }
 
                 Assert.IsNotNull(method,
-                    "More than one constructor found for type '{0}' when creating dependencies.  Use [Inject] attribute to specify which to use.", enclosingType);
+                    "More than one constructor found for type '{0}' when creating dependencies.  Use [Inject] attribute to specify which to use.".With(enclosingType));
             }
             else
             {

@@ -206,6 +206,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89715ad69b973a14899afa2c6730b30b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Installers:
+  - {fileID: 805392157}
 --- !u!114 &805392157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -214,10 +216,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 805392154}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c36198576255c1d4aa262e846773ccb5, type: 3}
+  m_Script: {fileID: 11500000, guid: ac59283f2813c5643a2495056b74c1c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  AsteroidSettings:
+  SceneSettings:
     MainCamera: {fileID: 1495790306}
     Gui: {fileID: 1194014233}
     Ship:

@@ -34,8 +34,7 @@ namespace ModestTree.Zenject
                 if (!success)
                 {
                     //Debug.LogWarning(
-                        //String.Format("IInitializable with type '{0}' does not have a priority assigned",
-                            //initializable.GetType()));
+                        //String.Format("IInitializable with type '{0}' does not have a priority assigned", //initializable.GetType()));
                 }
 
                 _initializables.Add(
@@ -78,7 +77,7 @@ namespace ModestTree.Zenject
             {
                 foreach (var initializable in _initializables.Select(x => x.Initializable).FindDuplicates())
                 {
-                    Assert.That(false, "Found duplicate IInitializable with type '" + initializable.GetType() + "'");
+                    Assert.That(false, "Found duplicate IInitializable with type '{0}'".With(initializable.GetType()));
                 }
             }
 
@@ -93,7 +92,7 @@ namespace ModestTree.Zenject
                 catch (Exception e)
                 {
                     throw new ZenjectException(
-                        e, "Error occurred while initializing IInitializable with type '" + initializable.GetType().Name() + "'");
+                        "Error occurred while initializing IInitializable with type '{0}'".With(initializable.GetType().Name()), e);
                 }
             }
         }

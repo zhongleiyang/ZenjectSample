@@ -12,8 +12,9 @@ namespace ModestTree.Zenject
         DiContainer _container;
         IDependencyRoot _dependencyRoot;
 
+        public MonoInstaller[] Installers;
+
         static Action<DiContainer> _extraBindingLookup;
-        static Action<DiContainer> _extraInstallerBindingLookup;
 
         internal static Action<DiContainer> ExtraBindingsLookup
         {
@@ -21,15 +22,6 @@ namespace ModestTree.Zenject
             {
                 Assert.IsNull(_extraBindingLookup);
                 _extraBindingLookup = value;
-            }
-        }
-
-        internal static Action<DiContainer> ExtraInstallerBindingsLookup
-        {
-            set
-            {
-                Assert.IsNull(_extraInstallerBindingLookup);
-                _extraInstallerBindingLookup = value;
             }
         }
 
@@ -43,47 +35,25 @@ namespace ModestTree.Zenject
 
         void Register()
         {
-            var sceneInstallers = (from c in gameObject.GetComponents<MonoBehaviour>() where c.GetType().DerivesFrom<ISceneInstaller>() select ((ISceneInstaller)(object)c));
-
-            if (sceneInstallers.HasMoreThan(1))
+            if (Installers.IsEmpty())
             {
-                Debug.LogError("Found multiple scene installers when only one was expected while initializing CompositionRoot");
+                Debug.LogError("No installers found while initializing CompositionRoot");
                 return;
             }
 
-            if (sceneInstallers.IsEmpty())
+            foreach (var installer in Installers)
             {
-                Debug.LogError("Could not find scene installer while initializing CompositionRoot");
-                return;
+                // The installers that are part of the scene are monobehaviours
+                // and therefore were not created via Zenject and therefore do
+                // not have their members injected
+                // At the very least they will need the container injected but
+                // they might also have some configuration passed from another
+                // scene
+                FieldsInjecter.Inject(_container, installer);
+                _container.Bind<IInstaller>().To(installer);
             }
 
-            var installer = sceneInstallers.Single();
-
-            var moduleContainer = new DiContainer();
-
-            installer.InstallModules(moduleContainer);
-
-            if (_extraInstallerBindingLookup != null)
-            {
-                _extraInstallerBindingLookup(moduleContainer);
-                _extraInstallerBindingLookup = null;
-            }
-
-            var modules = moduleContainer.ResolveMany<Module>();
-
-            if (modules.IsEmpty())
-            {
-                Debug.Log("No modules found while initializing CompositionRoot");
-                return;
-            }
-
-            Debug.Log("Initializing Composition Root with " + modules.Count() + " modules");
-
-            foreach (var module in modules)
-            {
-                module.Container = _container;
-                module.AddBindings();
-            }
+            ZenUtil.InstallInstallers(_container);
         }
 
         void InitContainer()

@@ -72,8 +72,8 @@ namespace ModestTree.Zenject
 
             if (_lastWidth != Screen.width || _lastHeight != Screen.height)
             {
-				_lastWidth = Screen.width;
-				_lastHeight = Screen.height;
+                _lastWidth = Screen.width;
+                _lastHeight = Screen.height;
                 ScreenSizeChanged();
             }
         }

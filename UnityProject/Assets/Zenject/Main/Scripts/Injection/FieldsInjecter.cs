@@ -41,10 +41,8 @@ namespace ModestTree.Zenject
             if (shouldUseAll && !additionalCopy.IsEmpty())
             {
                 throw new ZenjectResolveException(
-                    "Passed unnecessary parameters when injecting into type '{0}'. \nExtra Parameters: {1}\nObject graph:\n{2}",
-                    injectable.GetType().Name(),
-                    String.Join(",", additionalCopy.Select(x => x.GetType().Name()).ToArray()),
-                    container.GetCurrentObjectGraph());
+                    "Passed unnecessary parameters when injecting into type '{0}'. \nExtra Parameters: {1}\nObject graph:\n{2}"
+                        .With(injectable.GetType().Name(), String.Join(",", additionalCopy.Select(x => x.GetType().Name()).ToArray()), container.GetCurrentObjectGraph()));
             }
 
             foreach (var methodInfo in InjectablesFinder.GetPostInjectMethods(injectable.GetType()))

@@ -9,14 +9,9 @@ namespace ModestTree.Zenject
         {
         }
 
-        public ZenjectException(string message, params object[] strParams)
-            : base(String.Format(message, strParams))
-        {
-        }
-
         public ZenjectException(
-            Exception innerException, string message, params object[] strParams)
-            : base(String.Format(message, strParams), innerException)
+            string message, Exception innerException)
+            : base(message, innerException)
         {
         }
     }
@@ -28,14 +23,9 @@ namespace ModestTree.Zenject
         {
         }
 
-        public ZenjectResolveException(string message, params object[] strParams)
-            : base(String.Format(message, strParams))
-        {
-        }
-
         public ZenjectResolveException(
-            Exception innerException, string message, params object[] strParams)
-            : base(String.Format(message, strParams), innerException)
+            string message, Exception innerException)
+            : base(message, innerException)
         {
         }
     }
@@ -47,14 +37,8 @@ namespace ModestTree.Zenject
         {
         }
 
-        public ZenjectBindException(string message, params object[] strParams)
-            : base(String.Format(message, strParams))
-        {
-        }
-
-        public ZenjectBindException(
-            Exception innerException, string message, params object[] strParams)
-            : base(String.Format(message, strParams), innerException)
+        public ZenjectBindException(string message, Exception innerException)
+            : base(message, innerException)
         {
         }
     }

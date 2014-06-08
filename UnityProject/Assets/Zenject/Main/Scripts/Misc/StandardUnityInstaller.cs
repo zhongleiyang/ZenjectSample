@@ -3,10 +3,10 @@ using System.Linq;
 
 namespace ModestTree.Zenject
 {
-    public class StandardUnityModule : Module
+    public class StandardUnityInstaller : Installer
     {
         // Install basic functionality for most unity apps
-        public override void AddBindings()
+        public override void InstallBindings()
         {
             _container.Bind<UnityKernel>().ToSingleGameObject();
 

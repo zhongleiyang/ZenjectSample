@@ -12,7 +12,7 @@ namespace ModestTree.Zenject
 {
     public static class ZenjectMenu
     {
-        [MenuItem("Assets/Zenject/Validate Current Scene #%v")]
+        [MenuItem("Edit/Zenject/Validate Current Scene #%v")]
         public static void ValidateCurrentScene()
         {
             var compRoots = GameObject.FindObjectsOfType<CompositionRoot>();
@@ -31,23 +31,13 @@ namespace ModestTree.Zenject
 
             var compRoot = compRoots.Single();
 
-            var sceneInstallers = compRoot.GetComponents<MonoBehaviour>().Where(x => x.GetType().DerivesFrom<ISceneInstaller>()).Cast<ISceneInstaller>();
-
-            if (sceneInstallers.HasMoreThan(1))
-            {
-                Debug.LogError("Found multiple scene installers when only one was expected while validating current scene");
-                return;
-            }
-
-            if (sceneInstallers.IsEmpty())
+            if (compRoot.Installers.IsEmpty())
             {
                 Debug.LogError("Could not find scene installer while validating current scene");
                 return;
             }
 
-            var installer = sceneInstallers.Single();
-
-            var resolveErrors = ZenUtil.ValidateInstaller(installer, false, compRoot).Take(10);
+            var resolveErrors = ValidateInstallers(compRoot).Take(10);
 
             // Only show a few to avoid spamming the log too much
             foreach (var error in resolveErrors)
@@ -65,91 +55,70 @@ namespace ModestTree.Zenject
             }
         }
 
-        [MenuItem("Assets/Zenject/Output Object Graph For Current Scene")]
-        public static void OutputObjectGraphForScene()
+        static IEnumerable<ZenjectResolveException> ValidateInstallers(CompositionRoot compRoot)
         {
-            if (EditorApplication.isPlaying)
+            var container = new DiContainer();
+            container.Bind<CompositionRoot>().ToSingle(compRoot);
+
+            foreach (var installer in compRoot.Installers)
             {
-                var roots = GameObject.FindObjectsOfType<CompositionRoot>();
-
-                if (roots.IsEmpty())
+                if (installer == null)
                 {
-                    Debug.LogError("Zenject error: Unable to find CompositionRoot in current scene.");
+                    yield return new ZenjectResolveException(
+                        "Found null installer in properties of Composition Root");
+                    yield break;
                 }
-                else if (roots.Length > 1)
-                {
-                    Debug.LogError("Zenject error: Found multiple CompositionRoot objects.  Not sure which one to use");
-                }
-                else
-                {
-                    string dotFilePath = EditorUtility.SaveFilePanel("Choose the path to export the object graph", "", "ObjectGraph", "dot");
 
-                    if (!dotFilePath.IsEmpty())
-                    {
-                        ObjectGraphVisualizer.OutputObjectGraphToFile(roots[0].Container, dotFilePath);
-
-                        var dotExecPath = EditorPrefs.GetString("Zenject.GraphVizDotExePath", "");
-
-                        if (dotExecPath.IsEmpty() || !File.Exists(dotExecPath))
-                        {
-                            EditorUtility.DisplayDialog(
-                                "GraphViz", "Unable to locate GraphViz.  Please select the graphviz 'dot.exe' file which can be found at [GraphVizInstallDirectory]/bin/dot.exe.  If you do not have GraphViz you can download it at http://www.graphviz.org", "Ok");
-
-                            dotExecPath = EditorUtility.OpenFilePanel("Please select dot.exe from GraphViz bin directory", "", "exe");
-
-                            EditorPrefs.SetString("Zenject.GraphVizDotExePath", dotExecPath);
-                        }
-
-                        if (!dotExecPath.IsEmpty())
-                        {
-                            RunDotExe(dotExecPath, dotFilePath);
-                        }
-                    }
-                }
+                installer.Container = container;
+                container.Bind<IInstaller>().To(installer);
             }
-            else
+
+            foreach (var error in ZenUtil.ValidateInstallers(container))
             {
-                Debug.LogError("Zenject error: Must be in play mode to generate object graph.  Hit Play button and try again.");
+                yield return error;
+            }
+
+            // Also make sure we can fill in all the dependencies in the built-in scene
+            foreach (var monoBehaviour in compRoot.GetComponentsInChildren<MonoBehaviour>())
+            {
+                if (monoBehaviour == null)
+                {
+                    // Be nice to give more information here
+                    Debug.LogWarning("Found null MonoBehaviour in scene");
+                    continue;
+                }
+
+                foreach (var error in container.ValidateObjectGraph(monoBehaviour.GetType()))
+                {
+                    yield return error;
+                }
             }
         }
 
-        static void RunDotExe(string dotExePath, string dotFileInputPath)
+        [MenuItem("Edit/Zenject/Output Object Graph For Current Scene")]
+        public static void OutputObjectGraphForScene()
         {
-            var outputDir = Path.GetDirectoryName(dotFileInputPath);
-            var fileBaseName = Path.GetFileNameWithoutExtension(dotFileInputPath);
-
-            var proc = new System.Diagnostics.Process();
-
-            proc.StartInfo.FileName = dotExePath;
-            proc.StartInfo.Arguments = String.Format("-Tpng {0}.dot -o{0}.png", fileBaseName);
-            proc.StartInfo.RedirectStandardError = true;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.WorkingDirectory = outputDir;
-
-            proc.Start();
-            proc.WaitForExit();
-
-            var errorMessage = proc.StandardError.ReadToEnd();
-            proc.WaitForExit();
-
-            if (errorMessage.IsEmpty())
+            if (!EditorApplication.isPlaying)
             {
-                EditorUtility.DisplayDialog(
-                    "Success!", String.Format("Successfully created files {0}.dot and {0}.png", fileBaseName), "Ok");
-            }
-            else
-            {
-                EditorUtility.DisplayDialog(
-                    "Error", String.Format("Error occurred while generating {0}.png", fileBaseName), "Ok");
-
-                Debug.LogError("Zenject error: Failure during object graph creation: " + errorMessage);
-
-                // Do we care about STDOUT?
-                //var outputMessage = proc.StandardOutput.ReadToEnd();
-                //Debug.Log("outputMessage = " + outputMessage);
+                Debug.LogError("Zenject error: Must be in play mode to generate object graph.  Hit Play button and try again.");
+                return;
             }
 
+            DiContainer container;
+            try
+            {
+                container = ZenEditorUtil.GetContainerForCurrentScene();
+            }
+            catch (ZenjectException e)
+            {
+                Debug.LogError("Unable to find container in current scene. " + e.Message);
+                return;
+            }
+
+            var ignoreTypes = Enumerable.Empty<Type>();
+            var types = container.AllConcreteTypes;
+
+            ZenEditorUtil.OutputObjectGraphForCurrentScene(container, ignoreTypes, types);
         }
     }
 }

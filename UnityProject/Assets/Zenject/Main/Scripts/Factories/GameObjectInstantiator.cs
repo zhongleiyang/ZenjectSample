@@ -88,7 +88,7 @@ namespace ModestTree.Zenject
             if (component == null)
             {
                 throw new ZenjectResolveException(
-                    "Could not find component with type '{0}' when instantiating template", typeof(T));
+                    "Could not find component with type '{0}' when instantiating template".With(typeof(T)));
             }
 
             return component;

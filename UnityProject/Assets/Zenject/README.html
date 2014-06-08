@@ -1,5 +1,5 @@
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-<link rel="stylesheet" id="theme" href="Github.css"></head><body><p><img src="Main/ZenjectLogo.png?raw=true" alt="Zenject" width="600px" height="134px"></p>
+<link rel="stylesheet" id="theme" href="Github.css"></head><body style="overflow-x: visible;"><p><img src="Main/ZenjectLogo.png?raw=true" alt="Zenject" width="600px" height="134px"></p>
 <h1>Dependency Injection Framework for Unity3D</h1>
 <h2>Table Of Contents</h2>
 <ul>
@@ -20,18 +20,17 @@
 <li><a href="#the-dependency-root">The Dependency Root</a></li>
 <li><a href="#itickable">ITickable</a></li>
 <li><a href="#iinitializable-and-postinject">IInitializable and PostInject</a></li>
-<li><a href="#composition-root--installer--modules">Composition Root, Installers, And Modules</a></li>
 </ul>
 </li>
 <li><a href="#zenject-order-of-operations">Zenject Order Of Operations</a></li>
 <li><a href="#di-rules--guidelines--recommendations">Rules / Guidelines / Recommendations</a></li>
 <li>Advanced Features<ul>
 <li><a href="#update--initialization-order">Update Order And Initialization Order</a></li>
+<li><a href="#dynamic-object-graph-validation">Creating Objects Dynamically</a></li>
+<li><a href="#using-bindscope">Using BindScope</a></li>
 <li><a href="#injecting-data-across-scenes">Injecting Data Across Scenes</a></li>
 <li><a href="#using-the-unity-inspector-to-configure-settings">Using the Unity Inspector To Configure Settings</a></li>
 <li><a href="#object-graph-validation">Object Graph Validation</a></li>
-<li><a href="#dynamic-object-graph-validation">Creating Objects Dynamically</a></li>
-<li><a href="#using-bindscope">Using BindScope</a></li>
 <li><a href="#implementing-idisposable">Implementing IDisposable</a></li>
 <li><a href="#auto-mocking-using-moq">Auto-Mocking Using Moq</a></li>
 <li><a href="#visualizing-object-graphs-automatically">Visualizing Object Graph Automatically</a></li>
@@ -39,6 +38,7 @@
 </li>
 <li><a href="#further-help">Further Help</a></li>
 <li><a href="#license">License</a></li>
+<li><a href="#version">Version</a></li>
 </ul>
 </li>
 </ul>
@@ -59,6 +59,7 @@
 <li>Auto-Mocking using the Moq library</li>
 <li>Injection across different Unity scenes</li>
 <li>Ability to print entire object graph as a UML image automatically</li>
+<li>Ability to validate object graphs at editor time</li>
 </ul>
 <h2><a id="history"></a>History</h2>
 <p>Unity is a fantastic game engine, however the approach that new developers are encouraged to take does not lend itself well to writing large, flexible, or scalable code bases.  In particular, the default way that Unity manages dependencies between different game components can often be awkward and error prone.</p>
@@ -142,22 +143,19 @@
 <li>Refactorability - When code is loosely coupled, as is the case when using DI properly, the entire code base is much more resilient to changes.  You can completely change parts of the code base without having those changes wreak havoc on other parts.</li>
 <li>Encourages modular code - When using a DI framework you will naturally follow better design practices, because it forces you to think about the interfaces between classes.</li>
 </ul>
-<h2><a id="zenjectoverview"></a>Overview Of The Zenject API</h2>
+<h2><a id="overview-of-the-zenject-api"></a>Overview Of The Zenject API</h2>
 <p>What follows is a general overview of how DI patterns are applied using Zenject.  However, the best documentation right now is probably the included sample project itself (a kind of asteroids clone, which you can find by opening "Extras/SampleGame/Asteroids.unity").  I would recommend using that for reference after reading over these concepts.</p>
 <h2><a id="hello-world-example"></a>Hello World Example</h2>
-<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">TestInstaller</span> :</span> MonoBehaviour, ISceneInstaller
-{
-    public void InstallModules(DiContainer container)
-    {
-        container.Bind&lt;Module&gt;().ToSingle&lt;StandardUnityModule&gt;();
-        container.Bind&lt;Module&gt;().ToSingle&lt;TestModule&gt;();
-    }
-}
+<pre><code class="python">using ModestTree.Zenject;
+using UnityEngine;
+using System.Collections;
 
-public <span class="class"><span class="keyword">class</span> <span class="title">TestModule</span> :</span> Module
+public <span class="class"><span class="keyword">class</span> <span class="title">TestInstaller</span> :</span> MonoInstaller
 {
-    public override void AddBindings()
+    public override void InstallBindings()
     {
+        _container.Bind&lt;IInstaller&gt;().ToSingle&lt;StandardUnityInstaller&gt;();
+
         _container.Bind&lt;IDependencyRoot&gt;().ToSingle&lt;DependencyRootStandard&gt;();
 
         _container.Bind&lt;ITickable&gt;().ToSingle&lt;TestRunner&gt;();
@@ -187,14 +185,16 @@ public <span class="class"><span class="keyword">class</span> <span class="title
 <li>Create a new scene in Unity</li>
 <li>Add a new GameObject and name it "CompositionRoot" (though the name does not really matter)</li>
 <li>Attach the CompositionRoot MonoBehaviour to your new GameObject</li>
-<li>Attach your TestInstaller script as well</li>
+<li>Add your TestInstaller script to the scene as well (as its own GameObject or on the same GameObject as the CompositionRoot, it doesn't matter)</li>
+<li>Add a reference to your TestInstaller to the properties of the CompositionRoot by dragging the TestInstaller GameObject to the "Installers" property in the inspector</li>
+<li>Validate your scene by either selecting Edit -&gt; Zenject -&gt; Validate Current Scene.  (note that this step isn't necessary but good practice to get into)</li>
 <li>Run</li>
 <li>Observe unity console for output</li>
 </ul>
-<p>The CompositionRoot MonoBehaviour is the entry point of the application, where Zenject sets up all the various dependencies before kicking off your scene.  To add content to your Zenject scene, you need to write what is referred to in Zenject as an 'Installer' and also some number of 'Modules'.  Don't worry if this or the above code isn't making sense yet.  We will return to this in a later section.</p>
+<p>The CompositionRoot MonoBehaviour is the entry point of the application, where Zenject sets up all the various dependencies before kicking off your scene.  To add content to your Zenject scene, you need to write what is referred to in Zenject as an 'Installer'.  Don't worry if this or the above code isn't making sense yet.  We will return to this in a later section.</p>
 <h2><a id="binding"></a>Binding</h2>
 <p>Every dependency injection framework is ultimately just a framework to bind types to instances.</p>
-<p>In Zenject, dependency mapping done by adding bindings to something called a container.  The container should then 'know' how to create all the object instances in our application, by recursively resolving all dependencies for a given object.</p>
+<p>In Zenject, dependency mapping is done by adding bindings to something called a container.  The container should then 'know' how to create all the object instances in our application, by recursively resolving all dependencies for a given object.</p>
 <p>The format for the bind command can be any of the following:</p>
 <p>Inject by interface.  Note in this case it is injected as a singleton so there will only be one instance of Foo injected into any classes that use it.</p>
 <pre><code class="xml">_container.Bind<span class="tag">&lt;<span class="title">IFoo</span>&gt;</span>().ToSingle<span class="tag">&lt;<span class="title">Foo</span>&gt;</span>();</code></pre>
@@ -307,7 +307,7 @@ public class Bar
     }
 }</code></pre>
 <h2><a id="the-dependency-root"></a>The dependency root</h2>
-<p>Every Zenject app has one root object.  The dependencies of this object generates the full object graph for the application/game.  For example, in the sample project this is the GameRoot class which is declared as below:</p>
+<p>Every Zenject app has one root object.  The dependencies of this object generates the full object graph for the application/game (not including the object graphs that are built into the scene as well as the object graphs that are created dynamically).  For example, in the sample project this is the GameRoot class which is declared as below:</p>
 <pre><code class="xml">_container.Bind<span class="tag">&lt;<span class="title">IDependencyRoot</span>&gt;</span>().ToSingle<span class="tag">&lt;<span class="title">GameRoot</span>&gt;</span>();</code></pre>
 <h2><a id="itickable"></a>ITickable</h2>
 <p>I prefer to avoid MonoBehaviours when possible in favour of just normal C# classes.  Zenject allows you to do this much more easily by providing interfaces that mirror functionality that you would normally need to use a MonoBehaviour for.</p>
@@ -324,7 +324,7 @@ public class Bar
 <p>Note that the order that Tick() is called on all ITickables is also configurable, as outlined <a href="#update--initialization-order">here</a>.</p>
 <h2><a id="iinitializable-and-postinject"></a>IInitializable and PostInject</h2>
 <p>If you have some initialization that needs to occur on a given object, you can include this code in the constructor.  However, this means that the initialization logic would occur in the middle of the object graph being constructed, so it may not be ideal.</p>
-<p>One alternative is implement IInitializable, and then perform initialization logic in an Initialize() method.  This method would be called immediately after the entire object graph is constructed.  The order that the Initialize() methods are called on all IInitialize's is also controllable in a similar way to ITickable, as explained <a href="#update--initialization-order">here</a>.</p>
+<p>One alternative is to implement IInitializable, and then perform initialization logic in an Initialize() method.  This method would be called immediately after the entire object graph is constructed.  The order that the Initialize() methods are called on all IInitialize's is also controllable in a similar way to ITickable, as explained <a href="#update--initialization-order">here</a>.</p>
 <p>IInitializable works well for start-up initialization, but what about for objects that are created dynamically via factories?  (see <a href="#dynamic-object-graph-validation">this section</a> for what I'm referring to here).</p>
 <p>In these cases you can mark any methods that you want to be called after injection occurs with a [PostInject] attribute:</p>
 <pre><code class="cpp"><span class="keyword">public</span> <span class="keyword">class</span> Foo
@@ -343,19 +343,13 @@ public class Bar
 <p>This still has the drawback that it is called in the middle of object graph construction, but can be useful in many cases.  In particular, if you are using property injection (which isn't generally recommended but necessary in some cases) then you will not have your dependencies in the constructor, and therefore you will need to define a [PostInject] method in this case.  You will also need to use [PostInject] for MonoBehaviours that you are creating dynamically, since MonoBehaviours cannot have contructors.</p>
 <p>Note that if you do plan to use IInitializable and ITickable as described here that you will need to either use DependencyRootStandard as your root (that is, the type bound to IDependencyRoot) or a subclass.  This is because DependencyRootStandard includes the classes responsible for handling the IInitializable's and ITickable's.</p>
 <p>This also means that you do not need to use this approach at all.  You can use a custom dependency root and handle your own updating and initialization yourself, or simply write all your code in MonoBehaviours, and still receive all the benefits of Zenject.</p>
-<h2><a id="composition-root--installer--modules"></a>Composition Root / Installer / Modules</h2>
-<p>As touched on briefly above, every Zenject scene contains one and only one 'scene installer', which declares all the 'modules' that are used in the scene by binding them to the given container.  What does these mean exactly?</p>
-<p>It is divided up this way because often it's nice to be able to group the bindings for a set of classes that relate to some functionality together (in a module) rather than just having a big collection of all the bindings for the scene in one place.</p>
-<p>For small projects this may seem over-engineered, since you will likely just be dealing with a single module and a single installer.  However as your project grows, and as you add more and more scenes/tests to your project, you will likely want to avoid the code duplication that would otherwise result in the modules for all your different scenes.  You can do this by defining common, re-usable modules and using them in multiple scenes.</p>
-<p>In general, the contents of the scene installer is very small - most of the work in setting up a scene is done in the modules themselves.  If this isn't making sense yet, it may be helpful to read the following sections then come back to this</p>
 <h2><a id="zenject-order-of-operations"></a>Zenject Order Of Operations</h2>
 <p>A Zenject driven application is executed by the following steps:</p>
 <ul>
 <li>Composition Root is started (via Unity Awake() method)</li>
-<li>Composition Root calls InstallModules() on the Scene Installer.  Note that it is assumed here that the scene installer is attached to the same game object as the composition root.</li>
-<li>The installer for the scene registers some number of modules on the given DiContainer by calling Bind&lt;&gt; methods.  It may also configure settings for each module through Bind&lt;&gt; commands as well.</li>
-<li>The Composition Root retrieves the full list of concrete instances bound to Module using the same container that was passed to the scene installer.  It then creates a <em>new</em> container, and traverses through this list of Modules.  For each module, it updates the <code>_container</code> member to refer to the newly created container, and calls AddBindings().</li>
-<li>Each Module then registers different sets of dependencies directly on to the given DiContainer by calling Bind&lt;&gt; and BindValue&lt;&gt; methods.  Note that the order that this binding occurs should not matter whatsoever.</li>
+<li>Composition Root creates a new DiContainer object to be used to contain all instances used in the scene</li>
+<li>Composition Root iterates through all the Installers that have been added to it via the Unity Inspector, and updates them to point to the new DiContainer.  It then calls InstallBindings() on each installer.</li>
+<li>Each Installer then registers different sets of dependencies directly on to the given DiContainer by calling one of the Bind&lt;&gt; methods.  Note that the order that this binding occurs should not matter. Each installer may also include other installers by binding to the IInstaller interface.</li>
 <li>The Composition Root then traverses the entire scene heirarchy and injects all MonoBehaviours with their dependencies. Since MonoBehaviours are instantiated by Unity we cannot use constructor injection in this case and therefore field or property injection must be used (which is done by adding a [Inject] attribute to any member).  Any methods on these MonoBehaviour's marked with [PostInject] are called at this point as well.</li>
 <li>After filling in the scene dependencies the Composition Root then retrieves the instance of the root object (that is, whatever is bound to IDependencyRoot).  In most cases code does not need to be in MonoBehaviours and will be resolved as a result of this</li>
 <li>If any required dependencies cannot be resolved, a ZenjectResolveException is thrown</li>
@@ -377,21 +371,21 @@ public class Bar
 </li>
 </ul>
 <h2><a id="update--initialization-order"></a>Update / Initialization Order</h2>
-<p>In many cases, especially for small projects, the order that classes update or initialize in does not matter.  This is why Unity does not have an easy way to control this (besides in Edit -&gt; Project Settings -&gt; Script Execution Order, though that is pretty awkward to use).  However, in larger projects update or initialization order can become an issue.  This can especially be an issue in Unity, since it is often difficult to predict in what order the Start(), Awake(), or Update() methods will be called in.</p>
+<p>In many cases, especially for small projects, the order that classes update or initialize in does not matter.  However, in larger projects update or initialization order can become an issue.  This can especially be an issue in Unity, since it is often difficult to predict in what order the Start(), Awake(), or Update() methods will be called in.  Unfortunately, Unity does not have an easy way to control this (besides in Edit -&gt; Project Settings -&gt; Script Execution Order, though that is pretty awkward to use)</p>
 <p>In Zenject, by default, ITickables and IInitializables are updated in the order that they are added, however for cases where the update or initialization order matters, there is a much better way.  By specifying their priorities explicitly in the installer.  For example, in the sample project you can find this code in the scene installer:</p>
-<pre><code class="xml">public class AsteroidsSceneInstaller : MonoBehaviour, ISceneInstaller
+<pre><code class="xml">public class AsteroidsInstaller : MonoInstaller
 {
     ...
 
-    void InitPriorities(DiContainer container)
+    void InitPriorities()
     {
-        container.Bind<span class="tag">&lt;<span class="title">Module</span>&gt;</span>().ToSingle<span class="tag">&lt;<span class="title">InitializablePrioritiesModule</span>&gt;</span>();
-        container.Bind<span class="tag">&lt;<span class="title">List&lt;Type</span>&gt;</span>&gt;().To(Initializables)
-            .WhenInjectedInto<span class="tag">&lt;<span class="title">InitializablePrioritiesModule</span>&gt;</span>();
+        _container.Bind<span class="tag">&lt;<span class="title">IInstaller</span>&gt;</span>().ToSingle<span class="tag">&lt;<span class="title">InitializablePrioritiesInstaller</span>&gt;</span>();
+        _container.Bind<span class="tag">&lt;<span class="title">List&lt;Type</span>&gt;</span>&gt;().To(Initializables)
+            .WhenInjectedInto<span class="tag">&lt;<span class="title">InitializablePrioritiesInstaller</span>&gt;</span>();
 
-        container.Bind<span class="tag">&lt;<span class="title">Module</span>&gt;</span>().ToSingle<span class="tag">&lt;<span class="title">TickablePrioritiesModule</span>&gt;</span>();
-        container.Bind<span class="tag">&lt;<span class="title">List&lt;Type</span>&gt;</span>&gt;().To(Tickables)
-            .WhenInjectedInto<span class="tag">&lt;<span class="title">TickablePrioritiesModule</span>&gt;</span>();
+        _container.Bind<span class="tag">&lt;<span class="title">IInstaller</span>&gt;</span>().ToSingle<span class="tag">&lt;<span class="title">TickablePrioritiesInstaller</span>&gt;</span>();
+        _container.Bind<span class="tag">&lt;<span class="title">List&lt;Type</span>&gt;</span>&gt;().To(Tickables)
+            .WhenInjectedInto<span class="tag">&lt;<span class="title">TickablePrioritiesInstaller</span>&gt;</span>();
     }
 
     static List<span class="tag">&lt;<span class="title">Type</span>&gt;</span> Initializables = new List<span class="tag">&lt;<span class="title">Type</span>&gt;</span>()
@@ -408,148 +402,7 @@ public class Bar
     };
 }</code></pre>
 <p>This way, you won't hit a wall at the end of the project due to some unforseen order-dependency.</p>
-<p>Any ITickables or IInitializables that aren't given an explicit order are updated last.</p>
-<h2><a id="injecting-data-across-scenes"></a>Injecting data across scenes</h2>
-<p>In some cases it's useful to pass arguments from one scene to another.  The way Unity allows us to do this by default is fairly awkward.  Your options are to create a persistent GameObject and call DontDestroyOnLoad() to keep it alive when changing scenes, or use global static classes to temporarily store the data.</p>
-<p>Let's pretend you want to specify a 'level' string to the next scene.  You have the following class that requires the input:</p>
-<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">LevelHandler</span> :</span> IInitializable
-{
-    readonly string _startLevel;
-
-    public LevelHandler(
-        [InjectOptional]
-        [Inject(<span class="string">"StartLevelName"</span>)]
-        string startLevel)
-    {
-        <span class="keyword">if</span> (startLevel == null)
-        {
-            _startLevel = <span class="string">"default_level"</span>;
-        }
-        <span class="keyword">else</span>
-        {
-            _startLevel = startLevel;
-        }
-    }
-
-    public void Initialize()
-    {
-        ...
-        [Load level]
-        ...
-    }
-}</code></pre>
-<p>You can load the scene containing <code>LessonStandaloneStart</code> and specify a particular level by using the following syntax:</p>
-<pre><code class="xml">ZenUtil.LoadScene("NameOfSceneToLoad",
-    delegate (DiContainer container)
-    {
-        container.Bind<span class="tag">&lt;<span class="title">string</span>&gt;</span>().To("custom_level").WhenInjectedInto<span class="tag">&lt;<span class="title">LevelHandler</span>&gt;</span>("StartLevelName");
-    });</code></pre>
-<p>Note that you can still run the scene directly, in which case it will default to using "level01".  This is possible because we are using the InjectOptional flag.</p>
-<p>An alternative way to do this would be to customize the module itself rather than the LevelHandler class.  In this case we can write our LevelHandler class like this (without the [InjectOptional] flag)</p>
-<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">LevelHandler</span> :</span> IInitializable
-{
-    readonly string _startLevel;
-
-    public LevelHandler(string startLevel)
-    {
-        _startLevel = startLevel;
-    }
-
-    public void Initialize()
-    {
-        ...
-        [Load level]
-        ...
-    }
-}</code></pre>
-<p>Then, in the module for our scene we can include the following:</p>
-<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">GameModule</span> :</span> Module
-{
-    [Inject(<span class="string">"LevelName"</span>)]
-    [InjectOptional]
-    public string LevelName = <span class="string">"default_level"</span>;
-
-    ...
-
-    public override void AddBindings()
-    {
-        ...
-        _container.Bind&lt;string&gt;().To(LevelName).WhenInjectedInto&lt;LevelHandler&gt;();
-        ...
-    }
-}</code></pre>
-<p>Then, instead of injecting directly into the LevelHandler we can inject into the module instead, by passing a second delegate.  Be careful to always note that the container used by the Scene Installer is different from the container used by the modules (this is why we need to use the delegate passed as the second parameter)</p>
-<pre><code class="xml">ZenUtil.LoadScene("NameOfSceneToLoad",
-    null,
-    delegate (DiContainer container)
-    {
-        container.Bind<span class="tag">&lt;<span class="title">string</span>&gt;</span>().To("level02").WhenInjectedInto<span class="tag">&lt;<span class="title">GameModule</span>&gt;</span>("LevelName");
-    });</code></pre>
-<p>Note that in this case I didn't need to use the "LevelName" identifier since there is only one string injected into the GameModule class, however I find it's sometimes nice to be explicit.</p>
-<h2><a id="using-the-unity-inspector-to-configure-settings"></a>Using the Unity Inspector To Configure Settings</h2>
-<p>One implication of writing most of your code as normal C# classes instead of MonoBehaviour's is that you lose the ability to configure data on them using the inspector.  You can however still take advantage of this in Zenject by using the following pattern, as seen in the sample project:</p>
-<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">AsteroidsSceneInstaller</span> :</span> MonoBehaviour, ISceneInstaller
-{
-    public AsteroidsMainModule.Settings AsteroidSettings;
-
-    public void InstallModules(DiContainer container)
-    {
-        ...
-        container.Bind&lt;AsteroidsMainModule.Settings&gt;().To(AsteroidSettings);
-        ...
-    }
-}</code></pre>
-<p>Then in your module:</p>
-<pre><code class="cpp"><span class="keyword">public</span> <span class="keyword">class</span> AsteroidsMainModule : Module
-{
-    [Inject]
-    readonly Settings _settings;
-
-    <span class="keyword">public</span> override <span class="keyword">void</span> AddBindings()
-    {
-        ...
-        _container.Bind&lt;ShipStateMoving.Settings&gt;().ToSingle(_settings.StateMoving);
-        ...
-    }
-
-    [Serializable]
-    <span class="keyword">public</span> <span class="keyword">class</span> Settings
-    {
-        ...
-        <span class="keyword">public</span> ShipStateMoving.Settings StateMoving;
-        ...
-    }
-}</code></pre>
-<p>Note that if you follow this method, you will have to make sure to always include the [Serializable] attribute on your settings wrappers, otherwise they won't show up in the Unity inspector.</p>
-<p>You can see this in action, start the asteroids scene and try adjusting <code>Ship -&gt; State Moving -&gt; Move Speed</code> setting and watch live as your ship changes speed.</p>
-<h2><a id="object-graph-validation"></a>Object Graph Validation</h2>
-<p>The usual workflow when setting up bindings using a DI framework is something like this:</p>
-<ul>
-<li>Add some number of bindings in code</li>
-<li>Execute your app</li>
-<li>Observe a bunch of DI related exceptions</li>
-<li>Modify your bindings to address problem</li>
-<li>Repeat</li>
-</ul>
-<p>This works ok for small projects, but as the complexity of your project grows it is often a tedious process.  The problem gets worse if the startup time of your application is particularly bad.  What would be great is some tool to analyze your object graph and tell you exactly where all the missing bindings are, without requiring the cost of firing up your whole app.</p>
-<p>You can do this in Zenject out-of-the-box by executing the menu item <code>Assets -&gt; Zenject -&gt; Validate Current Scene</code> or simply hitting CTRL+SHIFT+V with the scene open that you want to validate.  This will execute the scene installer for the current scene and construct a fully bound container.   It will then iterate through the object graphs and verify that all bindings can be found (without actually instantiating any of them).</p>
-<p>Also, if you happen to be a fan of automated testing (as I am) then you can include object graph validation as part of that by calling <code>ZenUtil.ValidateInstaller([scene installer])</code></p>
-<h2><a id="dynamic-object-graph-validation"></a>Dynamic Object Graph Validation</h2>
-<p>The above approach great for dependencies that are attached to the dependency root, as well as any dependencies that are attached to any MonoBehaviour's that are saved into the scene, but what about classes that are instantiated at runtime via factories?  How do you validate those object graphs?</p>
-<p>If you want to be thorough (and I recommend it) then you can include these object graphs as well, by including an extra method in your modules to declare these object graphs.  For example, in the sample project, we define the following:</p>
-<pre><code class="xml">public class AsteroidsMainModule : Module
-{
-    ...
-    public override IEnumerable<span class="tag">&lt;<span class="title">ZenjectResolveException</span>&gt;</span> ValidateSubGraphs()
-    {
-        return Validate<span class="tag">&lt;<span class="title">Asteroid</span>&gt;</span>().Concat(
-               Validate<span class="tag">&lt;<span class="title">ShipStateDead</span>&gt;</span>(typeof(Ship))).Concat(
-               Validate<span class="tag">&lt;<span class="title">ShipStateMoving</span>&gt;</span>(typeof(Ship))).Concat(
-               Validate<span class="tag">&lt;<span class="title">ShipStateWaitingToStart</span>&gt;</span>(typeof(Ship)));
-    }
-    ...
-}</code></pre>
-<p>This information is used when validating to cover the dynamic object graphs.  Note that in many cases the dynamically created object will get all of its required dependencies out of the container, but in some cases the dependencies will be provided manually, via calls to <code>[Factory].Create()</code> (for eg. the ship state classes above).  In these cases you need to tell Zenject to ignore these dependencies by passing in a list of types.</p>
+<p>Note also that any ITickables or IInitializables that aren't given an explicit order are updated last.</p>
 <h2><a id="dynamic-object-graph-validation"></a>Creating Objects Dynamically</h2>
 <p>One of the things that often confuses people new to dependency injection is the question of how to create new objects dynamically, after the app/game has fully started up and after the composition root has resolved the dependency root.  For example, if you are writing a game in which you are spawning new enemies throughout the game, then you will want to construct a new object graph for the 'enemy' class.  How to do this?  The answer: Factories.</p>
 <p>Remember that an important part of dependency injection is to reserve use of the container to strictly the "Composition Root Layer".  The container class (DiContainer) is itself included as a dependency in itself so there is nothing stopping you from ignoring this rule and injecting the container into any classes that you want.  For example, the following code will work:</p>
@@ -760,6 +613,133 @@ public class Bar
     }
 }</code></pre>
 <p>BindScope can be used in factories to temporarily configure the container in a similar way that's done in installers.  This can be very useful when creating complex object graphs at runtime.  After the function returns, whatever bindings you added in the using{} block are automatically removed.  BindScope can also be used to specify injection identifiers as well (which can be less error prone than passing extra parameters as variable arguments to IFactory)</p>
+<h2><a id="injecting-data-across-scenes"></a>Injecting data across scenes</h2>
+<p>In some cases it's useful to pass arguments from one scene to another.  The way Unity allows us to do this by default is fairly awkward.  Your options are to create a persistent GameObject and call DontDestroyOnLoad() to keep it alive when changing scenes, or use global static classes to temporarily store the data.</p>
+<p>Let's pretend you want to specify a 'level' string to the next scene.  You have the following class that requires the input:</p>
+<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">LevelHandler</span> :</span> IInitializable
+{
+    readonly string _startLevel;
+
+    public LevelHandler(
+        [InjectOptional]
+        [Inject(<span class="string">"StartLevelName"</span>)]
+        string startLevel)
+    {
+        <span class="keyword">if</span> (startLevel == null)
+        {
+            _startLevel = <span class="string">"default_level"</span>;
+        }
+        <span class="keyword">else</span>
+        {
+            _startLevel = startLevel;
+        }
+    }
+
+    public void Initialize()
+    {
+        ...
+        [Load level]
+        ...
+    }
+}</code></pre>
+<p>You can load the scene containing <code>LessonStandaloneStart</code> and specify a particular level by using the following syntax:</p>
+<pre><code class="xml">ZenUtil.LoadScene("NameOfSceneToLoad",
+    delegate (DiContainer container)
+    {
+        container.Bind<span class="tag">&lt;<span class="title">string</span>&gt;</span>().To("custom_level").WhenInjectedInto<span class="tag">&lt;<span class="title">LevelHandler</span>&gt;</span>("StartLevelName");
+    });</code></pre>
+<p>Note that you can still run the scene directly, in which case it will default to using "level01".  This is possible because we are using the InjectOptional flag.</p>
+<p>An alternative way to do this would be to customize the installer itself rather than the LevelHandler class.  In this case we can write our LevelHandler class like this (without the [InjectOptional] flag)</p>
+<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">LevelHandler</span> :</span> IInitializable
+{
+    readonly string _startLevel;
+
+    public LevelHandler(string startLevel)
+    {
+        _startLevel = startLevel;
+    }
+
+    public void Initialize()
+    {
+        ...
+        [Load level]
+        ...
+    }
+}</code></pre>
+<p>Then, in the installer for our scene we can include the following:</p>
+<pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">GameInstaller</span> :</span> Installer
+{
+    [Inject(<span class="string">"LevelName"</span>)]
+    [InjectOptional]
+    public string LevelName = <span class="string">"default_level"</span>;
+
+    ...
+
+    public override void InstallBindings()
+    {
+        ...
+        _container.Bind&lt;string&gt;().To(LevelName).WhenInjectedInto&lt;LevelHandler&gt;();
+        ...
+    }
+}</code></pre>
+<p>Then, instead of injecting directly into the LevelHandler we can inject into the installer instead.</p>
+<pre><code class="xml">ZenUtil.LoadScene("NameOfSceneToLoad",
+    delegate (DiContainer container)
+    {
+        container.Bind<span class="tag">&lt;<span class="title">string</span>&gt;</span>().To("level02").WhenInjectedInto<span class="tag">&lt;<span class="title">GameInstaller</span>&gt;</span>("LevelName");
+    });</code></pre>
+<p>Note that in this case I didn't need to use the "LevelName" identifier since there is only one string injected into the GameInstaller class, however I find it's sometimes nice to be explicit.</p>
+<h2><a id="using-the-unity-inspector-to-configure-settings"></a>Using the Unity Inspector To Configure Settings</h2>
+<p>One implication of writing most of your code as normal C# classes instead of MonoBehaviour's is that you lose the ability to configure data on them using the inspector.  You can however still take advantage of this in Zenject by using the following pattern, as seen in the sample project:</p>
+<pre><code class="cpp"><span class="keyword">public</span> <span class="keyword">class</span> AsteroidsInstaller : MonoInstaller
+{
+    <span class="keyword">public</span> Settings SceneSettings;
+
+    <span class="keyword">public</span> override <span class="keyword">void</span> InstallBindings()
+    {
+        ...
+        _container.Bind&lt;ShipStateMoving.Settings&gt;().ToSingle(SceneSettings.StateMoving);
+        ...
+    }
+
+    [Serializable]
+    <span class="keyword">public</span> <span class="keyword">class</span> Settings
+    {
+        ...
+        <span class="keyword">public</span> ShipStateMoving.Settings StateMoving;
+        ...
+    }
+}</code></pre>
+<p>Note that if you follow this method, you will have to make sure to always include the [Serializable] attribute on your settings wrappers, otherwise they won't show up in the Unity inspector.</p>
+<p>You can see this in action, start the asteroids scene and try adjusting <code>Ship -&gt; State Moving -&gt; Move Speed</code> setting and watch live as your ship changes speed.</p>
+<h2><a id="object-graph-validation"></a>Object Graph Validation</h2>
+<p>The usual workflow when setting up bindings using a DI framework is something like this:</p>
+<ul>
+<li>Add some number of bindings in code</li>
+<li>Execute your app</li>
+<li>Observe a bunch of DI related exceptions</li>
+<li>Modify your bindings to address problem</li>
+<li>Repeat</li>
+</ul>
+<p>This works ok for small projects, but as the complexity of your project grows it is often a tedious process.  The problem gets worse if the startup time of your application is particularly bad.  What would be great is some tool to analyze your object graph and tell you exactly where all the missing bindings are, without requiring the cost of firing up your whole app.</p>
+<p>You can do this in Zenject out-of-the-box by executing the menu item <code>Edit -&gt; Zenject -&gt; Validate Current Scene</code> or simply hitting CTRL+SHIFT+V with the scene open that you want to validate.  This will execute all installers for the current scene and construct a fully bound container.   It will then iterate through the object graphs and verify that all bindings can be found (without actually instantiating any of them).</p>
+<p>Also, if you happen to be a fan of automated testing (as I am) then you can include object graph validation as part of that by calling <code>ZenUtil.ValidateInstallers()</code></p>
+<h2><a id="dynamic-object-graph-validation"></a>Dynamic Object Graph Validation</h2>
+<p>The above approach great for dependencies that are attached to the dependency root, as well as any dependencies that are attached to any MonoBehaviour's that are saved into the scene, but what about classes that are instantiated at runtime via factories?  How do you validate those object graphs?</p>
+<p>If you want to be thorough (and I recommend it) then you can include these object graphs as well, by overridding an extra method in your installers to declare these object graphs.  For example, in the sample project, we define the following:</p>
+<pre><code class="xml">public class AsteroidsInstaller : MonoInstaller
+{
+    ...
+    public override IEnumerable<span class="tag">&lt;<span class="title">ZenjectResolveException</span>&gt;</span> ValidateSubGraphs()
+    {
+        return Validate<span class="tag">&lt;<span class="title">Asteroid</span>&gt;</span>().Concat(
+               Validate<span class="tag">&lt;<span class="title">ShipStateDead</span>&gt;</span>(typeof(Ship))).Concat(
+               Validate<span class="tag">&lt;<span class="title">ShipStateMoving</span>&gt;</span>(typeof(Ship))).Concat(
+               Validate<span class="tag">&lt;<span class="title">ShipStateWaitingToStart</span>&gt;</span>(typeof(Ship)));
+    }
+    ...
+}</code></pre>
+<p>This information is used when validating to cover the dynamic object graphs.  Note that in many cases the dynamically created object will get all of its required dependencies out of the container, but in some cases the dependencies will be provided manually, via calls to <code>[Factory].Create()</code> (for eg. the ship state classes above).  In these cases you need to tell Zenject to ignore these dependencies by passing in a list of types.</p>
 <h2><a id="implementing-idisposable"></a>Implementing IDisposable</h2>
 <p>If you have external resources that you want to clean up when the app closes, the scene changes, or for whatever reason the composition root object is destroyed, you can do the following:</p>
 <pre><code class="python">public <span class="class"><span class="keyword">class</span> <span class="title">Logger</span> :</span> IInitializable, IDisposable
@@ -833,6 +813,8 @@ _container.Bind<span class="tag">&lt;<span class="title">IDisposable</span>&gt;<
 <h2><a id="further-help"></a>Further Help</h2>
 <p>There currently does not exist a support forum yet.  In the meantime, I would recommend creating an issue on the Zenject github repository, which you can find <a href="https://github.com/modesttree/Zenject">here</a>.</p>
 <p>Alternatively, you can contact me directly at svermeulen@modesttree.com</p>
+<h2><a id="introduction"></a>Version</h2>
+<p>Version 1.07</p>
 <h2><a id="license"></a>License</h2>
 <p>   Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
