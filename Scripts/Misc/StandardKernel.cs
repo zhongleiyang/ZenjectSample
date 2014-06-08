@@ -123,14 +123,7 @@ namespace ModestTree.Zenject
             {
                 Assert.That(taskInfo.Priority.HasValue);
 
-                try
-                {
-                    taskInfo.Tickable.Tick();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
+                LogUtil.CallAndCatchExceptions(() => taskInfo.Tickable.Tick());
             }
 
             ClearRemovedTasks(_sortedTasks);

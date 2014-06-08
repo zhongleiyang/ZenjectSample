@@ -21,19 +21,19 @@ namespace ModestTree.Zenject
             return typeof(T);
         }
 
-        public override bool HasInstance()
+        public override bool HasInstance(Type contractType)
         {
+            Assert.That(typeof(T).DerivesFromOrEqual(contractType));
             return false;
         }
 
-        public override object GetInstance()
+        public override object GetInstance(Type contractType)
         {
+            Assert.That(typeof(T).DerivesFromOrEqual(contractType));
             var obj = _method(_container);
 
             Assert.That(obj != null, () =>
-                String.Format(
-                    "Method provider returned null when looking up type '{0}'. \nObject graph:\n{1}",
-                    typeof(T).Name(), _container.GetCurrentObjectGraph()));
+                "Method provider returned null when looking up type '{0}'. \nObject graph:\n{1}".With(typeof(T).Name(), _container.GetCurrentObjectGraph()));
 
             return obj;
         }

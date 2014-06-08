@@ -33,7 +33,7 @@ namespace ModestTree.Zenject
 
         public ValueBinder<TContract> BindValue<TContract>() where TContract : struct
         {
-            return new CustomScopeValueBinder<TContract>(this, _container, _singletonMap);
+            return new CustomScopeValueBinder<TContract>(this, _container);
         }
 
         void AddProvider(ProviderBase provider)
@@ -56,8 +56,8 @@ namespace ModestTree.Zenject
 
             public CustomScopeValueBinder(
                 BindScope owner,
-                DiContainer container, SingletonProviderMap singletonMap)
-                : base(container, singletonMap)
+                DiContainer container)
+                : base(container)
             {
                 _owner = owner;
             }

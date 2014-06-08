@@ -16,7 +16,7 @@ namespace ModestTree.Zenject
             if (!container.AllowNullBindings && prefab == null)
             {
                 throw new ZenjectBindException(
-                    "Null prefab given for binding with type '{0}'", typeof(TContract));
+                    "Null prefab given for binding with type '{0}'".With(typeof(TContract)));
             }
 
             _prefab = prefab;
@@ -37,7 +37,7 @@ namespace ModestTree.Zenject
             if (component == null)
             {
                 throw new ZenjectResolveException(
-                    "Could not find component '{0}' when creating game object from prefab", typeof(TContract).Name());
+                    "Could not find component '{0}' when creating game object from prefab".With(typeof(TContract).Name()));
             }
 
             return component;

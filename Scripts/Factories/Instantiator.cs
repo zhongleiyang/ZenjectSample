@@ -72,7 +72,7 @@ namespace ModestTree.Zenject
             catch (Exception e)
             {
                 throw new ZenjectResolveException(
-                    e, "Error occurred while instantiating object with type '" + concreteType.Name() + "'");
+                    "Error occurred while instantiating object with type '{0}'".With(concreteType.Name()), e);
             }
 
             FieldsInjecter.Inject(_container, newObj, extrasList, true);
@@ -98,8 +98,8 @@ namespace ModestTree.Zenject
             if (!injectInfo.Optional)
             {
                 throw new ZenjectResolveException(
-                    "Unable to find field with type '{0}' when injecting dependencies into '{1}'. \nObject graph:\n {2}",
-                    injectInfo.ContractType, injectable, _container.GetCurrentObjectGraph());
+                    "Unable to find field with type '{0}' when injecting dependencies into '{1}'. \nObject graph:\n {2}"
+                        .With(injectInfo.ContractType, injectable, _container.GetCurrentObjectGraph()));
             }
 
             return null;

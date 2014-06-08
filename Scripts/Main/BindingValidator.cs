@@ -45,8 +45,8 @@ namespace ModestTree.Zenject
                         if (!isOptional)
                         {
                             yield return new ZenjectResolveException(
-                                "Could not find dependency with type 'List<{0}>' when injecting into '{1}.  If the empty list is also valid, you can allow this by using the [InjectOptional] attribute.' \nObject graph:\n{2}",
-                                subType.Name(), context.EnclosingType.Name(), container.GetCurrentObjectGraph());
+                                "Could not find dependency with type 'List<{0}>' when injecting into '{1}.  If the empty list is also valid, you can allow this by using the [InjectOptional] attribute.' \nObject graph:\n{2}"
+                                .With(subType.Name(), context.EnclosingType.Name(), container.GetCurrentObjectGraph()));
                         }
                     }
                     else
@@ -67,14 +67,14 @@ namespace ModestTree.Zenject
                         if (matches.IsEmpty())
                         {
                             yield return new ZenjectResolveException(
-                                "Could not find required dependency with type '{0}' when injecting into '{1}' \nObject graph:\n{2}",
-                                contractType.Name(), context.EnclosingType.Name(), container.GetCurrentObjectGraph());
+                                "Could not find required dependency with type '{0}' when injecting into '{1}' \nObject graph:\n{2}"
+                                .With(contractType.Name(), context.EnclosingType.Name(), container.GetCurrentObjectGraph()));
                         }
                         else
                         {
                             yield return new ZenjectResolveException(
-                                "Found multiple matches when only one was expected for dependency with type '{0}' when injecting into '{1}' \nObject graph:\n{2}",
-                                contractType.Name(), context.EnclosingType.Name(), container.GetCurrentObjectGraph());
+                                "Found multiple matches when only one was expected for dependency with type '{0}' when injecting into '{1}' \nObject graph:\n{2}"
+                                .With(contractType.Name(), context.EnclosingType.Name(), container.GetCurrentObjectGraph()));
                         }
                     }
                 }
@@ -111,10 +111,8 @@ namespace ModestTree.Zenject
                 if (!extrasList.IsEmpty())
                 {
                     yield return new ZenjectResolveException(
-                        "Found unnecessary extra parameters passed when injecting into '{0}' with types '{1}'.  \nObject graph:\n{2}",
-                        concreteType.Name(),
-                        String.Join(",", extrasList.Select(x => x.Name()).ToArray()),
-                        container.GetCurrentObjectGraph());
+                        "Found unnecessary extra parameters passed when injecting into '{0}' with types '{1}'.  \nObject graph:\n{2}"
+                        .With(concreteType.Name(), String.Join(",", extrasList.Select(x => x.Name()).ToArray()), container.GetCurrentObjectGraph()));
                 }
             }
         }
